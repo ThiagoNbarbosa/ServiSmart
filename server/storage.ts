@@ -134,6 +134,23 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(contracts).where(eq(contracts.active, true));
   }
 
+  // Report Elaborators operations
+  async getReportElaborators(): Promise<any[]> {
+    // Return technicians who are report elaborators (collaborators)
+    // Based on the names provided, from "Paulo" onwards they are collaboradors
+    const collaboratorNames = [
+      'Paulo', 'Danilo', 'Tairita', 'Flávia', 'Lucas', 'Gustavo', 'Thiago'
+    ];
+    
+    const allTechnicians = await db.select().from(technicians).where(eq(technicians.active, true));
+    
+    return allTechnicians.filter(tech => 
+      collaboratorNames.some(name => 
+        tech.name.toLowerCase().includes(name.toLowerCase())
+      )
+    );
+  }
+
   async getContract(id: number): Promise<Contract | undefined> {
     const [contract] = await db.select().from(contracts).where(eq(contracts.id, id));
     return contract;
@@ -162,6 +179,7 @@ export class DatabaseStorage implements IStorage {
       if (filters.status) conditions.push(eq(workOrders.status, filters.status));
       if (filters.technicianId) conditions.push(eq(workOrders.technicianId, filters.technicianId));
       if (filters.contractId) conditions.push(eq(workOrders.contractId, filters.contractId));
+      if (filters.collaboratorId) conditions.push(eq(workOrders.reportElaboratorId, filters.collaboratorId));
       if (filters.startDate) conditions.push(gte(workOrders.createdAt, new Date(filters.startDate)));
       if (filters.endDate) conditions.push(lte(workOrders.createdAt, new Date(filters.endDate)));
       
@@ -296,6 +314,7 @@ export class DatabaseStorage implements IStorage {
       if (filters.endDate) conditions.push(lte(workOrders.createdAt, new Date(filters.endDate)));
       if (filters.technicianId) conditions.push(eq(workOrders.technicianId, filters.technicianId));
       if (filters.contractId) conditions.push(eq(workOrders.contractId, filters.contractId));
+      if (filters.collaboratorId) conditions.push(eq(workOrders.reportElaboratorId, filters.collaboratorId));
       
       if (conditions.length > 0) {
         baseQuery = baseQuery.where(and(...conditions));
