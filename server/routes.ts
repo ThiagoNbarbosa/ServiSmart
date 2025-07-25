@@ -3,9 +3,11 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import multer from "multer";
 import ExcelJS from "exceljs";
+import * as fs from 'fs';
 import { storage } from "./storage";
 import { distributionService } from "./distributionService";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { importPatternData } from './patternImporter';
 import { insertWorkOrderSchema, insertChatMessageSchema, insertNotificationSchema } from "@shared/schema";
 
 const upload = multer({ 
@@ -343,8 +345,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Import pattern data route
+  app.post('/api/import-patterns', devAuthMiddleware, upload.single('file'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Nenhum arquivo fornecido" });
+      }
+
+      // Process CSV data directly from buffer
+      const csvContent = req.file.buffer.toString('latin1');
+      const lines = csvContent.split('\n').filter(line => line.trim());
+      
+      let techniciansCount = 0;
+      let elaboratorsCount = 0;
+      let contractsCount = 0;
+
+      for (let i = 1; i < lines.length; i++) { // Skip header
+        const line = lines[i].trim();
+        if (!line) continue;
+        
+        const [name, category] = line.split(';').map(s => s.trim());
+        
+        if (!name || !category) continue;
+
+        try {
+          if (category.toLowerCase().includes('técnico') || category.toLowerCase().includes('tcnico')) {
+            // Check if technician already exists
+            const existingTechnicians = await storage.getTechnicians();
+            const exists = existingTechnicians.some(t => t.name.toLowerCase() === name.toLowerCase());
+            
+            if (!exists) {
+              await storage.createTechnician({
+                name: name,
+                active: true,
+                maxConcurrentTasks: 5
+              });
+              techniciansCount++;
+            }
+          } 
+          else if (category.toLowerCase().includes('elaborador') || category.toLowerCase().includes('responsável')) {
+            // Check if elaborator already exists
+            const existingTechnicians = await storage.getTechnicians();
+            const exists = existingTechnicians.some(t => t.name.toLowerCase() === name.toLowerCase());
+            
+            if (!exists) {
+              await storage.createTechnician({
+                name: name,
+                active: true,
+                maxConcurrentTasks: 3
+              });
+              elaboratorsCount++;
+            }
+          }
+          else if (category.toLowerCase().includes('contrato')) {
+            // Check if contract already exists
+            const existingContracts = await storage.getContracts();
+            const exists = existingContracts.some(c => c.name.toLowerCase() === name.toLowerCase());
+            
+            if (!exists) {
+              await storage.createContract({
+                name: name,
+                description: 'Contrato de Manutenção Preventiva',
+                startDate: new Date(),
+                endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+                active: true
+              });
+              contractsCount++;
+            }
+          }
+        } catch (error) {
+          console.error(`Error importing ${name} (${category}):`, error);
+        }
+      }
+
+      res.json({
+        message: "Padrões importados com sucesso",
+        imported: { technicians: techniciansCount, elaborators: elaboratorsCount, contracts: contractsCount }
+      });
+
+    } catch (error) {
+      console.error("Error importing patterns:", error);
+      res.status(500).json({ 
+        message: "Falha ao importar padrões", 
+        error: error instanceof Error ? error.message : 'Erro desconhecido' 
+      });
+    }
+  });
+
   // Technicians routes
-  app.get('/api/technicians', isAuthenticated, async (req: any, res) => {
+  app.get('/api/technicians', devAuthMiddleware, async (req: any, res) => {
     try {
       const technicians = await storage.getTechnicians();
       res.json(technicians);
@@ -355,7 +444,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Contracts routes
-  app.get('/api/contracts', isAuthenticated, async (req: any, res) => {
+  app.get('/api/contracts', devAuthMiddleware, async (req: any, res) => {
     try {
       const contracts = await storage.getContracts();
       res.json(contracts);
