@@ -30,7 +30,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   try {
     await setupAuth(app);
   } catch (error) {
-    console.warn("Auth setup failed, using development mode:", error.message);
+    console.warn("Auth setup failed, using development mode:", error instanceof Error ? error.message : 'Unknown error');
   }
 
   // Auth routes with fallback for development
@@ -180,60 +180,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Excel Import route
-  app.post('/api/work-orders/import', isAuthenticated, upload.single('file'), async (req: any, res) => {
+  // Excel Import route - PREVENTIVAS Template
+  app.post('/api/work-orders/import', devAuthMiddleware, upload.single('file'), async (req: any, res) => {
     try {
       if (!req.file) {
-        return res.status(400).json({ message: "No file uploaded" });
+        return res.status(400).json({ message: "Nenhum arquivo foi enviado" });
       }
 
-      const userId = req.user.claims.sub;
+      const userId = req.user?.claims?.sub || 'dev-user-1';
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(req.file.buffer);
       
       const worksheet = workbook.getWorksheet(1);
       if (!worksheet) {
-        return res.status(400).json({ message: "No worksheet found" });
+        return res.status(400).json({ message: "Planilha não encontrada no arquivo" });
       }
 
-      const workOrders = [];
-      const headers = worksheet.getRow(1).values as any[];
-      
+      const workOrders: any[] = [];
+      const errors: string[] = [];
+      let processedRows = 0;
+
+      // Standard PREVENTIVAS Excel template mapping
+      // Expected columns: OS, Descrição, Equipamento, Local, Data Agendada, Prioridade, Técnico, etc.
       worksheet.eachRow((row, rowNumber) => {
         if (rowNumber === 1) return; // Skip header row
         
-        const values = row.values as any[];
-        const workOrder = {
-          osNumber: `OS-${Date.now()}-${rowNumber}`,
-          title: values[1] || 'Imported Work Order',
-          description: values[2] || '',
-          equipmentName: values[3] || '',
-          location: values[4] || '',
-          priority: values[5] || 'NORMAL',
-          createdBy: userId
-        };
-        
-        workOrders.push(workOrder);
+        try {
+          const values = row.values as any[];
+          
+          // Skip empty rows
+          if (!values || values.length < 3 || !values[1]) return;
+          
+          // Extract data from Excel columns
+          const osNumber = values[1]?.toString()?.trim() || `PREV-${Date.now()}-${rowNumber}`;
+          const description = values[2]?.toString()?.trim() || '';
+          const equipmentName = values[3]?.toString()?.trim() || '';
+          const location = values[4]?.toString()?.trim() || '';
+          const scheduledDate = values[5] ? new Date(values[5]) : null;
+          const priority = values[6]?.toString()?.toUpperCase()?.trim() || 'NORMAL';
+          const technicianName = values[7]?.toString()?.trim() || '';
+          
+          // Map priority to valid values
+          const validPriorities = ['BAIXA', 'NORMAL', 'ALTA', 'URGENTE'];
+          const mappedPriority = validPriorities.includes(priority) ? priority : 'NORMAL';
+          
+          // Generate title from description or equipment
+          const title = description || `Manutenção Preventiva - ${equipmentName}` || `OS ${osNumber}`;
+          
+          const workOrder = {
+            osNumber: osNumber,
+            title: title.substring(0, 255), // Limit title length
+            description: description,
+            equipmentName: equipmentName,
+            location: location,
+            priority: mappedPriority,
+            status: 'PENDENTE',
+            scheduledDate: scheduledDate?.toISOString(),
+            createdBy: userId
+          };
+          
+          workOrders.push(workOrder);
+          processedRows++;
+          
+        } catch (rowError) {
+          const errorMessage = rowError instanceof Error ? rowError.message : 'Erro desconhecido';
+          errors.push(`Linha ${rowNumber}: ${errorMessage}`);
+          console.error(`Error processing row ${rowNumber}:`, rowError);
+        }
       });
 
+      if (workOrders.length === 0) {
+        return res.status(400).json({ 
+          message: "Nenhuma OS válida encontrada na planilha",
+          errors: errors 
+        });
+      }
+
+      // Import work orders to database
       const importedWorkOrders = await storage.importWorkOrders(workOrders);
       
-      // Create notification
+      // Create success notification
       await storage.createNotification({
         userId,
-        title: 'Importação concluída',
-        message: `${importedWorkOrders.length} OS foram importadas com sucesso`,
+        title: 'Importação de OS Concluída',
+        message: `${importedWorkOrders.length} Ordens de Serviço foram importadas com sucesso`,
         type: 'SUCCESS'
       });
 
       res.json({ 
-        message: "Import completed successfully", 
+        message: "Importação concluída com sucesso", 
         count: importedWorkOrders.length,
-        workOrders: importedWorkOrders
+        processedRows: processedRows,
+        errors: errors.length > 0 ? errors : undefined,
+        workOrders: importedWorkOrders.map(wo => ({
+          id: wo.id,
+          osNumber: wo.osNumber,
+          title: wo.title,
+          status: wo.status
+        }))
       });
+      
     } catch (error) {
       console.error("Error importing work orders:", error);
-      res.status(500).json({ message: "Failed to import work orders" });
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      
+      // Create error notification
+      try {
+        await storage.createNotification({
+          userId: req.user?.claims?.sub || 'dev-user-1',
+          title: 'Erro na Importação',
+          message: `Falha ao importar planilha: ${errorMessage}`,
+          type: 'ERROR'
+        });
+      } catch (notifError) {
+        console.error("Error creating notification:", notifError);
+      }
+      
+      res.status(500).json({ 
+        message: "Falha ao importar planilha", 
+        error: errorMessage 
+      });
     }
   });
 
