@@ -1,0 +1,6 @@
+OS,Descrição,Equipamento,Local,Data Agendada,Prioridade,Técnico,Observações
+PREV-001,Inspeção preventiva bomba centrífuga,Bomba BC-01,Sala de máquinas A,2025-01-15,NORMAL,João Silva,Verificar vedações e rolamentos
+PREV-002,Manutenção preventiva motor elétrico,Motor ME-02,Oficina mecânica,2025-01-16,ALTA,Maria Santos,Trocar escovas de carvão
+PREV-003,Lubrificação sistema hidráulico,Sistema SH-03,Área industrial B,2025-01-17,NORMAL,Carlos Oliveira,Verificar nível e qualidade do óleo
+PREV-004,Inspeção válvulas de segurança,Válvulas VS-04,Caldeira principal,2025-01-18,URGENTE,João Silva,Teste de pressão obrigatório
+PREV-005,Calibração instrumentos medição,Instrumentos IM-05,Sala de controle,2025-01-19,NORMAL,Maria Santos,Calibração anual conforme norma
