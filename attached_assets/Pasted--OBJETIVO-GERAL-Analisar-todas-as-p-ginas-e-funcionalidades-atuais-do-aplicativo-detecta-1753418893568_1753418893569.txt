@@ -1,0 +1,49 @@
+# ⬇️ OBJETIVO GERAL:
+# Analisar todas as páginas e funcionalidades atuais do aplicativo,
+# detectar funcionalidades ausentes, pontos de melhoria e sugerir priorização de desenvolvimento
+# com base na metodologia: Mapeamento → Análise → Priorização.
+
+### 🧠 CONTEXTO TÉCNICO:
+# Linguagem: TypeScript / React (client/) + Express/Node.js (server/)
+# Arquitetura: Frontend (client/src/pages), Backend (server/)
+# Você tem acesso ao código e pode navegar pelos diretórios e arquivos livremente.
+
+# 🚀 FASE 1 - MAPEAMENTO DO APP
+
+1. Liste todas as rotas/páginas encontradas em client/src/pages (ex: dashboard.tsx, team-information.tsx, etc.)
+2. Para cada página, liste as funcionalidades disponíveis visíveis no código (botões, forms, uso de hooks, componentes).
+3. Identifique se existem páginas ausentes comuns, como: Configurações, Minha Conta, Perfil, Login, Cadastro, Suporte, FAQ.
+4. Crie um fluxograma simples da navegação (em texto), indicando caminhos principais.
+
+# 🧪 FASE 2 - ANÁLISE FUNCIONAL E TÉCNICA
+
+1. Verifique para cada funcionalidade se ela está implementada corretamente (ex: funções de exclusão/edição estão completas ou apenas com console.log).
+2. Aponte problemas ou limitações técnicas visíveis, como:
+   - Falta de validação de formulário,
+   - Ausência de loading states,
+   - Códigos incompletos,
+   - Ausência de manipulação de erros.
+
+# 🧩 FASE 3 - PRIORIZAÇÃO
+
+1. Use uma matriz de Impacto vs Esforço (simplificada em texto) para sugerir:
+   - Funcionalidades de alto impacto e baixo esforço (corrigir ou adicionar agora).
+   - Funcionalidades de alto impacto e alto esforço (planejar).
+   - Funcionalidades de baixo impacto (adiar ou descartar).
+2. Liste melhorias rápidas que podem ser aplicadas hoje sem quebrar o sistema.
+
+# ✅ ENTREGA ESPERADA DO AGENTE
+
+- Tabela com páginas e funcionalidades.
+- Lista de funcionalidades ausentes (por tipo).
+- Pontos técnicos críticos a serem corrigidos.
+- Sugestões priorizadas com base no impacto.
+- Sugestão de próximas ações (ex: criar página de Configurações, ativar edição real em Team Info, etc.).
+
+# ⚠️ IMPORTANTE:
+- NÃO execute ações destrutivas.
+- NÃO altere arquivos ainda.
+- Somente gere o diagnóstico completo para o desenvolvedor tomar decisões.
+
+# 🔁 COMANDO FINAL
+Inicie a análise a partir do diretório raiz do projeto e retorne o relatório completo conforme descrito acima.
