@@ -8,6 +8,7 @@ import { storage } from "./storage";
 import { distributionService } from "./distributionService";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { importPatternData } from './patternImporter';
+import { analyzeExcelStructure, suggestColumnMapping } from './excelAnalyzer';
 import { insertWorkOrderSchema, insertChatMessageSchema, insertNotificationSchema } from "@shared/schema";
 
 const upload = multer({ 
@@ -236,38 +237,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const values = row.values as any[];
           
-          // Skip empty rows
-          if (!values || values.length < 3 || !values[1]) return;
+          // Skip empty rows - check for actual OS number  
+          if (!values || values.length < 4 || !values[3]) return;
           
-          // Extract data from Excel columns
-          let osNumber = values[1]?.toString()?.trim();
+          // Extract data from new PREVENTIVAS format
+          // Column mapping based on actual file structure:
+          // 1-Responsável, 2-DATA LEVANT RELATÓRIO, 3-CONTRATO, 4-OS, 5-PREF, 6-AGÊNCIA, 7-VALOR, 8-VENCIMENTO, 9-SITUAÇÃO, 10-TÉCNICO, 11-AGENDAMENTO, 12-DIFICULDADE, 13-STATUS
+          
+          const responsible = values[0]?.toString()?.trim() || '';
+          const reportDate = values[1]; // DATA LEVANT RELATÓRIO
+          const contract = values[2]?.toString()?.trim() || '';
+          let osNumber = values[3]?.toString()?.trim();
+          const pref = values[4]?.toString()?.trim() || '';
+          const agency = values[5]?.toString()?.trim() || ''; // AGÊNCIA
+          const value = values[6]?.toString()?.trim() || '';
+          const dueDate = values[7]; // VENCIMENTO
+          const situation = values[8]?.toString()?.trim() || ''; // SITUAÇÃO
+          const technician = values[9]?.toString()?.trim() || ''; // TÉCNICO
+          const scheduling = values[10]?.toString()?.trim() || ''; // AGENDAMENTO
+          const difficulty = values[11]?.toString()?.trim() || ''; // DIFICULDADE
+          const status = values[12]?.toString()?.trim() || 'PENDENTE'; // STATUS
+          
+          // Generate OS number if missing
           if (!osNumber || osNumber === '' || osNumber === 'OS') {
             osNumber = `PREV-${Date.now()}-${rowNumber}`;
           }
-          const description = values[2]?.toString()?.trim() || '';
-          const equipmentName = values[3]?.toString()?.trim() || '';
-          const location = values[4]?.toString()?.trim() || '';
+          
+          // Create description combining available info
+          const description = `${situation} - ${agency} - ${pref}`.replace(/^[\s-]+|[\s-]+$/g, '');
+          const equipmentName = agency || `Equipamento ${osNumber}`;
+          const location = contract || 'Local não especificado';
           let scheduledDate: Date | null = null;
-          if (values[5]) {
-            try {
-              scheduledDate = new Date(values[5]);
-              // Validate date
-              if (isNaN(scheduledDate.getTime())) {
-                scheduledDate = null;
-              }
-            } catch {
-              scheduledDate = null;
+          
+          // Parse due date from VENCIMENTO column (index 7)
+          if (dueDate && dueDate instanceof Date) {
+            scheduledDate = dueDate;
+          } else if (dueDate) {
+            const dateStr = dueDate.toString();
+            const parsedDate = new Date(dateStr);
+            if (!isNaN(parsedDate.getTime())) {
+              scheduledDate = parsedDate;
             }
           }
-          const priority = values[6]?.toString()?.toUpperCase()?.trim() || 'NORMAL';
-          const technicianName = values[7]?.toString()?.trim() || '';
           
-          // Map priority to valid values
-          const validPriorities = ['BAIXA', 'NORMAL', 'ALTA', 'URGENTE'];
-          const mappedPriority = validPriorities.includes(priority) ? priority : 'NORMAL';
+          // Parse priority based on STATUS and DIFICULDADE
+          let priority = 'MEDIA';
+          if (status && status.toLowerCase().includes('urgente') || 
+              difficulty && difficulty.toLowerCase().includes('alta')) {
+            priority = 'ALTA';
+          } else if (status && status.toLowerCase().includes('baixa') ||
+                     difficulty && difficulty.toLowerCase().includes('baixa')) {
+            priority = 'BAIXA';
+          }
           
-          // Generate title from description or equipment
-          const title = description || `Manutenção Preventiva - ${equipmentName}` || `OS ${osNumber}`;
+          // Map STATUS to our system status
+          let mappedStatus = 'PENDENTE';
+          if (status) {
+            const statusLower = status.toLowerCase();
+            if (statusLower.includes('concluida') || statusLower.includes('finalizada')) {
+              mappedStatus = 'CONCLUIDA';
+            } else if (statusLower.includes('agendada') || statusLower.includes('agendamento')) {
+              mappedStatus = 'AGENDADA';
+            } else if (statusLower.includes('vencida') || statusLower.includes('atrasada')) {
+              mappedStatus = 'VENCIDA';
+            }
+          }
+
+          // Find technician by name for assignment
+          let technicianId: number | null = null;
+          
+          // Generate title from situation and agency
+          const title = description || `${situation} - ${agency}` || `OS ${osNumber}`;
           
           const workOrder = {
             osNumber: osNumber,
@@ -275,9 +315,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             description: description,
             equipmentName: equipmentName,
             location: location,
-            priority: mappedPriority,
-            status: 'PENDENTE',
+            priority: priority,
+            status: mappedStatus,
             scheduledDate: scheduledDate,
+            technicianId: technicianId,
             createdBy: userId
           };
           
@@ -427,6 +468,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error importing patterns:", error);
       res.status(500).json({ 
         message: "Falha ao importar padrões", 
+        error: error instanceof Error ? error.message : 'Erro desconhecido' 
+      });
+    }
+  });
+
+  // Excel structure analysis route
+  app.post('/api/analyze-excel', devAuthMiddleware, upload.single('file'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Nenhum arquivo fornecido" });
+      }
+
+      // Save uploaded file temporarily for analysis
+      const tempPath = `/tmp/excel_analysis_${Date.now()}.xlsx`;
+      fs.writeFileSync(tempPath, req.file.buffer);
+
+      // Analyze Excel structure
+      const analysis = await analyzeExcelStructure(tempPath);
+      const suggestedMapping = suggestColumnMapping(analysis.columns);
+
+      // Clean up temp file
+      fs.unlinkSync(tempPath);
+
+      res.json({
+        message: "Análise concluída",
+        analysis: {
+          ...analysis,
+          suggestedMapping
+        }
+      });
+
+    } catch (error) {
+      console.error("Error analyzing Excel:", error);
+      res.status(500).json({ 
+        message: "Falha ao analisar planilha", 
         error: error instanceof Error ? error.message : 'Erro desconhecido' 
       });
     }
