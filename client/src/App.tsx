@@ -7,6 +7,8 @@ import { useAuth } from "@/hooks/useAuth";
 import Dashboard from "@/pages/dashboard";
 import TeamInformation from "@/pages/team-information";
 import UserManagement from "@/pages/user-management";
+import WorkOrders from "@/pages/work-orders";
+import SimpleWorkOrders from "@/pages/simple-work-orders";
 import Landing from "@/pages/landing";
 import NotFound from "@/pages/not-found";
 
@@ -22,6 +24,7 @@ function Router() {
           <Route path="/" component={Dashboard} />
           <Route path="/team" component={TeamInformation} />
           <Route path="/users" component={UserManagement} />
+          <Route path="/work-orders" component={SimpleWorkOrders} />
         </>
       )}
       <Route component={NotFound} />

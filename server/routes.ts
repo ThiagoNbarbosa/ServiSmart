@@ -133,7 +133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Work Orders routes
-  app.get('/api/work-orders', isAuthenticated, async (req: any, res) => {
+  app.get('/api/work-orders', devAuthMiddleware, async (req: any, res) => {
     try {
       const filters = req.query;
       const workOrders = await storage.getWorkOrders(filters);
