@@ -14,7 +14,8 @@ import RecentActivity from "./RecentActivity";
 import QuickActions from "./QuickActions";
 import AutoRefreshIndicator from "./AutoRefreshIndicator";
 import FloatingNotification from "./FloatingNotification";
-import { Monitor, Tv } from "lucide-react";
+import { Monitor, Tv, Users } from "lucide-react";
+import { Link } from "wouter";
 
 export default function DashboardLayout() {
   const { user } = useAuth();
@@ -67,6 +68,18 @@ export default function DashboardLayout() {
 
             {/* Controls and User Info */}
             <div className="flex items-center space-x-4">
+              {/* Team Information Link */}
+              <Link href="/team">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center space-x-2"
+                >
+                  <Users className="h-4 w-4" />
+                  <span>Equipe</span>
+                </Button>
+              </Link>
+
               {/* TV Mode Toggle */}
               <Button
                 variant="outline"

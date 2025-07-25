@@ -35,6 +35,14 @@ export const users = pgTable("users", {
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   userLevel: varchar("user_level").notNull().default("USER"), // DEV, ADMIN, SUPER, USER
+  position: varchar("position"), // Job title/position
+  location: varchar("location"), // Work location
+  department: varchar("department"), // Department/team
+  phone: varchar("phone"), // Contact phone
+  bio: text("bio"), // Biography/description
+  isActive: boolean("is_active").default(true),
+  showInTeam: boolean("show_in_team").default(true), // Controls if user appears in team page
+  isDev: boolean("is_dev").default(false), // Special flag for DEV features
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -126,6 +134,30 @@ export const dashboardFilters = pgTable("dashboard_filters", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Team task progress tracking
+export const teamTasks = pgTable("team_tasks", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id),
+  taskName: varchar("task_name").notNull(),
+  progress: integer("progress").default(0), // 0-100
+  color: varchar("color").default("#3B82F6"), // Progress bar color
+  teamMembers: jsonb("team_members"), // Array of user IDs working on this task
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Environment configuration for DEV/PROD control
+export const environmentConfig = pgTable("environment_config", {
+  id: serial("id").primaryKey(),
+  key: varchar("key").unique().notNull(),
+  value: text("value"),
+  environment: varchar("environment").notNull(), // DEV, STAGING, PROD
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  updatedBy: varchar("updated_by").references(() => users.id),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   workOrders: many(workOrders),
@@ -203,10 +235,16 @@ export const insertWorkOrderChecklistSchema = createInsertSchema(workOrderCheckl
 export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({ id: true, createdAt: true });
 export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
 export const insertDashboardFilterSchema = createInsertSchema(dashboardFilters).omit({ id: true, createdAt: true });
+export const insertTeamTaskSchema = createInsertSchema(teamTasks).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertEnvironmentConfigSchema = createInsertSchema(environmentConfig).omit({ id: true, updatedAt: true });
 
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+export type InsertTeamTask = z.infer<typeof insertTeamTaskSchema>;
+export type TeamTask = typeof teamTasks.$inferSelect;
+export type InsertEnvironmentConfig = z.infer<typeof insertEnvironmentConfigSchema>;
+export type EnvironmentConfig = typeof environmentConfig.$inferSelect;
 export type InsertTechnician = z.infer<typeof insertTechnicianSchema>;
 export type Technician = typeof technicians.$inferSelect;
 export type InsertContract = z.infer<typeof insertContractSchema>;
