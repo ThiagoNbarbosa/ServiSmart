@@ -195,8 +195,28 @@ export class DatabaseStorage implements IStorage {
   async importWorkOrders(workOrdersList: InsertWorkOrder[]): Promise<WorkOrder[]> {
     const importedWorkOrders = [];
     for (const workOrder of workOrdersList) {
-      const [newWorkOrder] = await db.insert(workOrders).values(workOrder).returning();
-      importedWorkOrders.push(newWorkOrder);
+      try {
+        const [newWorkOrder] = await db
+          .insert(workOrders)
+          .values(workOrder)
+          .onConflictDoUpdate({
+            target: workOrders.osNumber,
+            set: {
+              title: workOrder.title,
+              description: workOrder.description,
+              equipmentName: workOrder.equipmentName,
+              location: workOrder.location,
+              priority: workOrder.priority,
+              scheduledDate: workOrder.scheduledDate,
+              updatedAt: new Date()
+            }
+          })
+          .returning();
+        importedWorkOrders.push(newWorkOrder);
+      } catch (error) {
+        console.error(`Error importing work order ${workOrder.osNumber}:`, error);
+        // Continue with next work order
+      }
     }
     return importedWorkOrders;
   }
@@ -390,6 +410,14 @@ export class DatabaseStorage implements IStorage {
 
   async getTeamTasks(): Promise<TeamTask[]> {
     return await db.select().from(teamTasks);
+  }
+
+  // User management by level
+  async getUsersByLevel(userLevel?: string): Promise<User[]> {
+    if (userLevel) {
+      return await db.select().from(users).where(eq(users.userLevel, userLevel));
+    }
+    return await db.select().from(users);
   }
 }
 

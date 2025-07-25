@@ -34,7 +34,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  userLevel: varchar("user_level").notNull().default("USER"), // DEV, ADMIN, SUPER, USER
+  userLevel: varchar("user_level").notNull().default("TECHNICIAN"), // DEV, CONTRACT_MANAGER, REPORT_ELABORATOR, SUPERVISOR, ADMIN, TECHNICIAN
   position: varchar("position"), // Job title/position
   location: varchar("location"), // Work location
   department: varchar("department"), // Department/team
@@ -79,14 +79,19 @@ export const workOrders = pgTable("work_orders", {
   location: varchar("location"),
   contractId: integer("contract_id").references(() => contracts.id),
   technicianId: integer("technician_id").references(() => technicians.id),
+  reportElaboratorId: varchar("report_elaborator_id").references(() => users.id), // Assigned report elaborator
+  supervisorId: varchar("supervisor_id").references(() => users.id), // Assigned supervisor
+  contractManagerId: varchar("contract_manager_id").references(() => users.id), // Assigned contract manager
   status: varchar("status").notNull().default("PENDENTE"), // PENDENTE, AGENDADA, CONCLUIDA, VENCIDA
   priority: varchar("priority").default("NORMAL"), // BAIXA, NORMAL, ALTA, URGENTE
+  assignmentStrategy: varchar("assignment_strategy").default("AUTO"), // AUTO, MANUAL, BALANCED
   scheduledDate: timestamp("scheduled_date"),
   completedDate: timestamp("completed_date"),
   dueDate: timestamp("due_date"),
   estimatedHours: decimal("estimated_hours", { precision: 4, scale: 2 }),
   actualHours: decimal("actual_hours", { precision: 4, scale: 2 }),
   createdBy: varchar("created_by").references(() => users.id),
+  assignedBy: varchar("assigned_by").references(() => users.id), // Supervisor who assigned
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -239,8 +244,69 @@ export const insertTeamTaskSchema = createInsertSchema(teamTasks).omit({ id: tru
 export const insertEnvironmentConfigSchema = createInsertSchema(environmentConfig).omit({ id: true, updatedAt: true });
 
 // Types
+// Contract Managers table (specialized user roles)
+export const contractManagers = pgTable("contract_managers", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  contractId: integer("contract_id").references(() => contracts.id),
+  active: boolean("active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Report Elaborators table  
+export const reportElaborators = pgTable("report_elaborators", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  specialization: varchar("specialization"), // Photo, Technical, Analysis
+  maxConcurrentReports: integer("max_concurrent_reports").default(10),
+  active: boolean("active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Supervisors table
+export const supervisors = pgTable("supervisors", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  region: varchar("region"), // Geographic region
+  specialization: varchar("specialization"), // Technical area
+  maxTeamSize: integer("max_team_size").default(15),
+  active: boolean("active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Work distribution tracking
+export const workDistribution = pgTable("work_distribution", {
+  id: serial("id").primaryKey(),
+  contractId: integer("contract_id").references(() => contracts.id).notNull(),
+  technicianId: integer("technician_id").references(() => technicians.id),
+  reportElaboratorId: varchar("report_elaborator_id").references(() => users.id),
+  supervisorId: varchar("supervisor_id").references(() => users.id),
+  assignedCount: integer("assigned_count").default(0),
+  completedCount: integer("completed_count").default(0),
+  avgCompletionTime: decimal("avg_completion_time", { precision: 6, scale: 2 }),
+  lastAssignment: timestamp("last_assignment"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Assignment rules for intelligent distribution
+export const assignmentRules = pgTable("assignment_rules", {
+  id: serial("id").primaryKey(),
+  contractId: integer("contract_id").references(() => contracts.id),
+  ruleType: varchar("rule_type").notNull(), // LOAD_BALANCE, SKILL_MATCH, REGION_MATCH
+  priority: integer("priority").default(1),
+  configuration: jsonb("configuration"), // JSON configuration for the rule
+  active: boolean("active").default(true),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+export type ContractManager = typeof contractManagers.$inferSelect;
+export type ReportElaborator = typeof reportElaborators.$inferSelect;
+export type Supervisor = typeof supervisors.$inferSelect;
+export type WorkDistribution = typeof workDistribution.$inferSelect;
 export type InsertTeamTask = z.infer<typeof insertTeamTaskSchema>;
 export type TeamTask = typeof teamTasks.$inferSelect;
 export type InsertEnvironmentConfig = z.infer<typeof insertEnvironmentConfigSchema>;
