@@ -4,6 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import multer from "multer";
 import ExcelJS from "exceljs";
 import { storage } from "./storage";
+import { distributionService } from "./distributionService";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertWorkOrderSchema, insertChatMessageSchema, insertNotificationSchema } from "@shared/schema";
 
@@ -237,7 +238,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (!values || values.length < 3 || !values[1]) return;
           
           // Extract data from Excel columns
-          const osNumber = values[1]?.toString()?.trim() || `PREV-${Date.now()}-${rowNumber}`;
+          let osNumber = values[1]?.toString()?.trim();
+          if (!osNumber || osNumber === '' || osNumber === 'OS') {
+            osNumber = `PREV-${Date.now()}-${rowNumber}`;
+          }
           const description = values[2]?.toString()?.trim() || '';
           const equipmentName = values[3]?.toString()?.trim() || '';
           const location = values[4]?.toString()?.trim() || '';
@@ -472,6 +476,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching team tasks:", error);
       res.status(500).json({ message: "Failed to fetch team tasks" });
+    }
+  });
+
+  // Distribution and assignment routes
+  app.post("/api/work-orders/:id/assign", isAuthenticated, async (req, res) => {
+    try {
+      const workOrderId = parseInt(req.params.id);
+      const { contractId, assignmentStrategy = 'BALANCED' } = req.body;
+      const supervisorId = req.user?.claims?.sub || 'dev-user-1';
+
+      const result = await distributionService.distributeWorkOrder(
+        workOrderId,
+        contractId,
+        supervisorId,
+        assignmentStrategy
+      );
+
+      res.json({ 
+        message: "Distribuição realizada com sucesso", 
+        assignment: result 
+      });
+    } catch (error) {
+      console.error("Error assigning work order:", error);
+      res.status(500).json({ message: "Falha na distribuição", error: error.message });
+    }
+  });
+
+  // Distribution statistics
+  app.get("/api/distribution/stats", isAuthenticated, async (req, res) => {
+    try {
+      const { contractId } = req.query;
+      const stats = await distributionService.getDistributionStats(
+        contractId ? parseInt(contractId as string) : undefined
+      );
+      res.json(stats);
+    } catch (error) {
+      console.error("Error getting distribution stats:", error);
+      res.status(500).json({ message: "Falha ao buscar estatísticas" });
+    }
+  });
+
+  // User management routes based on levels
+  app.get("/api/users", isAuthenticated, async (req, res) => {
+    try {
+      const { userLevel } = req.query;
+      const users = await storage.getUsersByLevel(userLevel as string);
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Falha ao buscar usuários" });
+    }
+  });
+
+  app.post("/api/users", isAuthenticated, async (req, res) => {
+    try {
+      const userData = {
+        id: `user-${Date.now()}`,
+        email: req.body.email,
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        userLevel: req.body.userLevel || 'TECHNICIAN',
+        active: true
+      };
+      const user = await storage.upsertUser(userData);
+      res.json(user);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Falha ao criar usuário" });
+    }
+  });
+
+  app.put("/api/users/:id", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.params.id;
+      const user = await storage.upsertUser({ id: userId, ...req.body });
+      res.json(user);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Falha ao atualizar usuário" });
     }
   });
 

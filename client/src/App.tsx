@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import Dashboard from "@/pages/dashboard";
 import TeamInformation from "@/pages/team-information";
+import UserManagement from "@/pages/user-management";
 import Landing from "@/pages/landing";
 import NotFound from "@/pages/not-found";
 
@@ -20,6 +21,7 @@ function Router() {
         <>
           <Route path="/" component={Dashboard} />
           <Route path="/team" component={TeamInformation} />
+          <Route path="/users" component={UserManagement} />
         </>
       )}
       <Route component={NotFound} />
