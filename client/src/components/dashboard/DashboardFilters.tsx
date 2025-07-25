@@ -18,6 +18,10 @@ export default function DashboardFilters({ filters, onFiltersChange }: Dashboard
     queryKey: ['/api/contracts'],
   });
 
+  const { data: collaborators } = useQuery({
+    queryKey: ['/api/report-elaborators'],
+  });
+
   const handleFilterChange = (key: string, value: string) => {
     const newFilters = { ...filters };
     if (value === 'all' || !value) {
@@ -114,6 +118,21 @@ export default function DashboardFilters({ filters, onFiltersChange }: Dashboard
             {contracts?.map((contract: any) => (
               <SelectItem key={contract.id} value={contract.id.toString()}>
                 {contract.name} - {contract.company}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Collaborator Filter */}
+        <Select value={filters.collaboratorId || 'all'} onValueChange={(value) => handleFilterChange('collaboratorId', value)}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Colaborador" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os colaboradores</SelectItem>
+            {collaborators?.map((collaborator: any) => (
+              <SelectItem key={collaborator.id} value={collaborator.id.toString()}>
+                {collaborator.name}
               </SelectItem>
             ))}
           </SelectContent>
