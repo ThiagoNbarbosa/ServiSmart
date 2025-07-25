@@ -188,12 +188,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userId = req.user?.claims?.sub || 'dev-user-1';
-      const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(req.file.buffer);
+      const fileName = req.file.originalname.toLowerCase();
       
-      const worksheet = workbook.getWorksheet(1);
-      if (!worksheet) {
-        return res.status(400).json({ message: "Planilha não encontrada no arquivo" });
+      let worksheet: any;
+      
+      if (fileName.endsWith('.csv')) {
+        // Handle CSV files
+        const csvContent = req.file.buffer.toString('utf-8');
+        const lines = csvContent.split('\n').filter(line => line.trim());
+        
+        // Create a mock worksheet object for CSV
+        worksheet = {
+          eachRow: (callback: (row: any, rowNumber: number) => void) => {
+            lines.forEach((line, index) => {
+              const values = ['', ...line.split(',').map(cell => cell.replace(/"/g, '').trim())];
+              callback({ values }, index + 1);
+            });
+          }
+        };
+      } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+        // Handle Excel files
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(req.file.buffer);
+        
+        worksheet = workbook.getWorksheet(1);
+        if (!worksheet) {
+          return res.status(400).json({ message: "Planilha não encontrada no arquivo" });
+        }
+      } else {
+        return res.status(400).json({ 
+          message: "Formato de arquivo não suportado. Use .xlsx, .xls ou .csv" 
+        });
       }
 
       const workOrders: any[] = [];
@@ -216,7 +241,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const description = values[2]?.toString()?.trim() || '';
           const equipmentName = values[3]?.toString()?.trim() || '';
           const location = values[4]?.toString()?.trim() || '';
-          const scheduledDate = values[5] ? new Date(values[5]) : null;
+          let scheduledDate: Date | null = null;
+          if (values[5]) {
+            try {
+              scheduledDate = new Date(values[5]);
+              // Validate date
+              if (isNaN(scheduledDate.getTime())) {
+                scheduledDate = null;
+              }
+            } catch {
+              scheduledDate = null;
+            }
+          }
           const priority = values[6]?.toString()?.toUpperCase()?.trim() || 'NORMAL';
           const technicianName = values[7]?.toString()?.trim() || '';
           
@@ -235,7 +271,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             location: location,
             priority: mappedPriority,
             status: 'PENDENTE',
-            scheduledDate: scheduledDate?.toISOString(),
+            scheduledDate: scheduledDate,
             createdBy: userId
           };
           

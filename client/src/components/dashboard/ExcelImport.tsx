@@ -99,10 +99,13 @@ export default function ExcelImport({ open, onOpenChange }: ExcelImportProps) {
   };
 
   const handleFileSelect = (selectedFile: File) => {
-    if (!selectedFile.name.endsWith('.xlsx') && !selectedFile.name.endsWith('.xls')) {
+    const validExtensions = ['.xlsx', '.xls', '.csv'];
+    const hasValidExtension = validExtensions.some(ext => selectedFile.name.toLowerCase().endsWith(ext));
+    
+    if (!hasValidExtension) {
       toast({
         title: "Formato inválido",
-        description: "Por favor, selecione um arquivo Excel (.xlsx ou .xls)",
+        description: "Por favor, selecione um arquivo Excel (.xlsx, .xls) ou CSV (.csv)",
         variant: "destructive",
       });
       return;
@@ -153,6 +156,9 @@ export default function ExcelImport({ open, onOpenChange }: ExcelImportProps) {
               </div>
               <div className="mt-2 text-blue-600">
                 💡 <strong>Dica:</strong> A primeira linha deve conter os cabeçalhos
+              </div>
+              <div className="mt-1 text-blue-600 text-xs">
+                📄 <strong>Formatos aceitos:</strong> Excel (.xlsx, .xls) ou CSV (.csv)
               </div>
             </div>
           </div>
