@@ -109,7 +109,7 @@ export class DatabaseStorage implements IStorage {
   async getTechnicians(): Promise<Technician[]> {
     // Exclude collaborators from technicians list
     const collaboratorNames = [
-      'Paulo', 'Danilo', 'Tairita', 'Flávia', 'Lucas', 'Gustavo', 'Thiago'
+      'Paulo', 'Danilo', 'Tairita', 'Talitta', 'Flávia', 'Lucas', 'Gustavo', 'Thiago'
     ];
     
     const allTechnicians = await db.select().from(technicians).where(eq(technicians.active, true));
@@ -150,7 +150,7 @@ export class DatabaseStorage implements IStorage {
     // Return technicians who are report elaborators (collaborators)
     // Based on the names provided, from "Paulo" onwards they are collaborators
     const collaboratorNames = [
-      'Paulo', 'Danilo', 'Tairita', 'Flávia', 'Lucas', 'Gustavo', 'Thiago'
+      'Paulo', 'Danilo', 'Tairita', 'Talitta', 'Flávia', 'Lucas', 'Gustavo', 'Thiago'
     ];
     
     const allTechnicians = await db.select().from(technicians).where(eq(technicians.active, true));
