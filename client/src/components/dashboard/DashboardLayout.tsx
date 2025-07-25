@@ -14,7 +14,7 @@ import RecentActivity from "./RecentActivity";
 import QuickActions from "./QuickActions";
 import AutoRefreshIndicator from "./AutoRefreshIndicator";
 import FloatingNotification from "./FloatingNotification";
-import { Monitor, Tv, Users } from "lucide-react";
+import { Monitor, Tv, Users, Settings } from "lucide-react";
 import { Link } from "wouter";
 
 export default function DashboardLayout() {
@@ -71,22 +71,23 @@ export default function DashboardLayout() {
               {/* Navigation Links */}
               <div className="flex items-center space-x-2">
                 <Link href="/work-orders">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-sm"
-                  >
+                  <Button variant="outline" size="sm" className="text-sm">
                     📋 OS Importadas
                   </Button>
                 </Link>
-                <Link href="/team">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center space-x-2"
-                  >
-                    <Users className="h-4 w-4" />
-                    <span>Equipe</span>
+                <Link href="/management">
+                  <Button variant="outline" size="sm" className="text-sm">
+                    ⚙️ Gestão
+                  </Button>
+                </Link>
+                <Link href="/reports">
+                  <Button variant="outline" size="sm" className="text-sm">
+                    📊 Relatórios
+                  </Button>
+                </Link>
+                <Link href="/help">
+                  <Button variant="outline" size="sm" className="text-sm">
+                    ❓ Ajuda
                   </Button>
                 </Link>
               </div>
@@ -126,13 +127,23 @@ export default function DashboardLayout() {
                 </Button>
               </div>
 
-              {/* User Avatar */}
+              {/* User Avatar and Profile */}
               <div className="flex items-center space-x-3">
-                <img 
-                  src={user?.profileImageUrl || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=32&h=32"} 
-                  alt="User Avatar" 
-                  className="h-8 w-8 rounded-full object-cover" 
-                />
+                <Link href="/profile">
+                  <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                    <img 
+                      src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=32&h=32"
+                      alt="User Avatar" 
+                      className="h-8 w-8 rounded-full object-cover" 
+                    />
+                    <span className="text-sm">Perfil</span>
+                  </Button>
+                </Link>
+                <Link href="/system-config">
+                  <Button variant="ghost" size="sm">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>

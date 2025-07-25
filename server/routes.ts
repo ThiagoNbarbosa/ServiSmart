@@ -530,6 +530,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Report Elaborators routes
+  app.get('/api/report-elaborators', devAuthMiddleware, async (req: any, res) => {
+    try {
+      const elaborators = await storage.getReportElaborators();
+      res.json(elaborators);
+    } catch (error) {
+      console.error("Error fetching report elaborators:", error);
+      res.status(500).json({ message: "Failed to fetch report elaborators" });
+    }
+  });
+
   // Chat routes
   app.get('/api/work-orders/:id/messages', isAuthenticated, async (req: any, res) => {
     try {
