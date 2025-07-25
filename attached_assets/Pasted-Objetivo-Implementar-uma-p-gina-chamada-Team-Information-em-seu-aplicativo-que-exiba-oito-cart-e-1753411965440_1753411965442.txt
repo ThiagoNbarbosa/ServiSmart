@@ -1,0 +1,41 @@
+Objetivo: Implementar uma página chamada “Team Information” em seu aplicativo, que exiba oito cartões de membros de equipe, seguindo o design fornecido, utilizando o esquema de cores já existente no aplicativo.
+
+Estrutura e Layout
+
+Título: Exibir “Informação de Equipe” no topo da página.
+
+Cards: Criar oito cards distribuídos em duas linhas de quatro, com espaçamento uniforme e design responsivo.
+
+Conteúdo dos cards:
+
+Avatar circular no canto superior esquerdo.
+
+Campos de texto para nome e cargo, extraídos de uma posterior página de usuários que vamos criar para cadastro de usuários com mais informações. 
+
+Ícones de contato (por exemplo, Whatsapp) alinhados abaixo do nome, reservando espaço sem criar novos dados.
+
+Cargo/função do membro (por exemplo, “Supervisor”), extraídos de uma posterior página de usuários que vamos criar para cadastro de usuários com mais informações.
+
+Barra de progresso horizontal para tarefas (“TASK”) com miniaturas de integrantes ao lado (indicando a quantidade de membros, como “2+”), mantendo o modelo visual do design.
+
+Menu de opções (ícone de três pontos verticais) no canto superior direito, com ações como Editar, Detalhes e Excluir, sem gerar conteúdos adicionais.
+
+Link ou botão “Explore Team” ao lado direito da barra de progresso.
+
+Interatividade: Cada card deve ser clicável e abrir uma página ou modal de detalhes, que exiba informações adicionais do membro obtidas do banco de dados do aplicativo (nome, cargo, descrição), sem gerar conteúdos fictícios.
+
+Estilização
+
+Utilizar o mesmo esquema de cores e tipografia já aplicado no aplicativo atual.
+
+Adicionar bordas arredondadas e sombras suaves aos cards para manter a estética do design.
+
+Responsividade: garantir que os cards se ajustem bem em diferentes tamanhos de tela.
+
+Observações
+
+Não criar dados fictícios: o código deve estar preparado para receber dados reais extraídos de uma posterior página de usuários que vamos criar para cadastro de usuários com mais informações.
+
+Comentar o código indicando as seções de estrutura (HTML), estilo (CSS) e interatividade (JavaScript) para facilitar futuras manutenções.
+
+Tenha em mente que eu sou o ACESSO DEV> eu quero saber se consigo dentro do mesmo ambiente configurar oque vai ser enviado para o deployed e o que é do DEV ? 

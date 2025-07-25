@@ -7,6 +7,7 @@ import {
   chatMessages,
   notifications,
   dashboardFilters,
+  teamTasks,
   type User,
   type UpsertUser,
   type InsertTechnician,
@@ -23,6 +24,7 @@ import {
   type Notification,
   type InsertDashboardFilter,
   type DashboardFilter,
+  type TeamTask,
   type DashboardMetrics,
   type StatusDistribution,
   type TechnicianStats,
@@ -379,6 +381,15 @@ export class DatabaseStorage implements IStorage {
   async getMonthlyTrends(months: number = 6): Promise<MonthlyTrend[]> {
     // This would be implemented with proper date aggregation
     return [];
+  }
+
+  // Team management operations
+  async getTeamMembers(): Promise<User[]> {
+    return await db.select().from(users).where(eq(users.showInTeam, true));
+  }
+
+  async getTeamTasks(): Promise<TeamTask[]> {
+    return await db.select().from(teamTasks);
   }
 }
 
