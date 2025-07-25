@@ -68,17 +68,28 @@ export default function DashboardLayout() {
 
             {/* Controls and User Info */}
             <div className="flex items-center space-x-4">
-              {/* Team Information Link */}
-              <Link href="/team">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center space-x-2"
-                >
-                  <Users className="h-4 w-4" />
-                  <span>Equipe</span>
-                </Button>
-              </Link>
+              {/* Navigation Links */}
+              <div className="flex items-center space-x-2">
+                <Link href="/work-orders">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-sm"
+                  >
+                    📋 OS Importadas
+                  </Button>
+                </Link>
+                <Link href="/team">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center space-x-2"
+                  >
+                    <Users className="h-4 w-4" />
+                    <span>Equipe</span>
+                  </Button>
+                </Link>
+              </div>
 
               {/* TV Mode Toggle */}
               <Button
