@@ -22,16 +22,39 @@ export default function ExcelImport({ open, onOpenChange }: ExcelImportProps) {
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append('file', file);
-      return await apiRequest('POST', '/api/work-orders/import', formData);
+      
+      // Use fetch directly to handle FormData properly
+      const response = await fetch('/api/work-orders/import', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erro na importação');
+      }
+      
+      return response;
     },
     onSuccess: async (response) => {
       const result = await response.json();
       toast({
         title: "Importação concluída",
-        description: `${result.count} OS foram importadas com sucesso`,
+        description: result.errors 
+          ? `${result.count} OS importadas com ${result.errors.length} avisos` 
+          : `${result.count} OS foram importadas com sucesso`,
+        variant: result.errors ? "default" : "default",
       });
+      
+      // Show errors if any
+      if (result.errors && result.errors.length > 0) {
+        console.warn("Import warnings:", result.errors);
+      }
+      
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/metrics'] });
       queryClient.invalidateQueries({ queryKey: ['/api/work-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/recent-activity'] });
       onOpenChange(false);
       setFile(null);
     },
@@ -104,12 +127,35 @@ export default function ExcelImport({ open, onOpenChange }: ExcelImportProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Importar OS via Excel</DialogTitle>
+          <DialogTitle>Importar Ordens de Serviço Preventivas</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4">
+        <div className="space-y-6">
+          {/* Template Information */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-blue-800 mb-2 flex items-center">
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Formato da Planilha PREVENTIVAS
+            </h3>
+            <div className="text-xs text-blue-700 space-y-1">
+              <div><strong>Colunas esperadas (ordem):</strong></div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 ml-2">
+                <div>1. Número OS</div>
+                <div>2. Descrição</div>
+                <div>3. Equipamento</div>
+                <div>4. Local</div>
+                <div>5. Data Agendada</div>
+                <div>6. Prioridade</div>
+                <div>7. Técnico</div>
+                <div>8. Observações</div>
+              </div>
+              <div className="mt-2 text-blue-600">
+                💡 <strong>Dica:</strong> A primeira linha deve conter os cabeçalhos
+              </div>
+            </div>
+          </div>
           <div
             className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
               dragActive
