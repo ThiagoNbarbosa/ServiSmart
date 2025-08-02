@@ -81,27 +81,21 @@ export default function Reports() {
     queryKey: ['/api/technicians'],
   });
 
-  // Build filters object
-  const filters = {
-    ...(selectedContract !== "all" && { contractId: selectedContract }),
-    ...(selectedTechnician !== "all" && { technicianId: selectedTechnician }),
-  };
-
   // Fetch real data from API
   const { data: statusDistribution, isLoading: statusLoading } = useQuery<StatusDistribution>({
-    queryKey: ['/api/dashboard/status-distribution', filters],
+    queryKey: ['/api/dashboard/status-distribution'],
   });
 
   const { data: priorityDistribution, isLoading: priorityLoading } = useQuery<PriorityDistribution>({
-    queryKey: ['/api/dashboard/priority-distribution', filters],
+    queryKey: ['/api/dashboard/priority-distribution'],
   });
 
   const { data: monthlyTrends, isLoading: trendsLoading } = useQuery<MonthlyTrend[]>({
-    queryKey: ['/api/dashboard/monthly-trends', { months: 6 }],
+    queryKey: ['/api/dashboard/monthly-trends'],
   });
 
   const { data: technicianStats, isLoading: techLoading } = useQuery<TechnicianStats[]>({
-    queryKey: ['/api/dashboard/technician-stats', filters],
+    queryKey: ['/api/dashboard/technician-stats'],
   });
 
   const generateReport = (type: string) => {
