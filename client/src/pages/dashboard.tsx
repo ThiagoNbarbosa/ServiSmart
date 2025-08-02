@@ -21,27 +21,59 @@ import StatusChart from "@/components/dashboard/StatusChart";
 import TechnicianPerformance from "@/components/dashboard/TechnicianPerformance";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import TrendChart from "@/components/dashboard/TrendChart";
+import type { ActivityItem } from "@shared/schema";
+
+interface DashboardMetrics {
+  totalOS: number;
+  pendingOS: number;
+  completionRate: number;
+  averageTime: number;
+  overdueOS: number;
+}
+
+interface StatusDistribution {
+  PENDENTE: number;
+  AGENDADA: number;
+  CONCLUIDA: number;
+  VENCIDA: number;
+}
+
+interface TechnicianStats {
+  id: number;
+  name: string;
+  completedOS: number;
+  successRate: number;
+  averageTime: number;
+}
+
+interface MonthlyTrend {
+  month: string;
+  created: number;
+  completed: number;
+}
+
+
 
 export default function Dashboard() {
   const [tvMode, setTvMode] = useState(false);
 
-  const { data: metrics, isLoading: metricsLoading } = useQuery({
-    queryKey: ["/api/dashboard/metrics", {}],
+  const { data: metrics, isLoading: metricsLoading } = useQuery<DashboardMetrics>({
+    queryKey: ["/api/dashboard/metrics"],
   });
 
-  const { data: statusDistribution, isLoading: statusLoading } = useQuery({
-    queryKey: ["/api/dashboard/status-distribution", {}],
+  const { data: statusDistribution, isLoading: statusLoading } = useQuery<StatusDistribution>({
+    queryKey: ["/api/dashboard/status-distribution"],
   });
 
-  const { data: technicianStats, isLoading: techLoading } = useQuery({
-    queryKey: ["/api/dashboard/technician-stats", {}],
+  const { data: technicianStats, isLoading: techLoading } = useQuery<TechnicianStats[]>({
+    queryKey: ["/api/dashboard/technician-stats"],
   });
 
-  const { data: recentActivity, isLoading: activityLoading } = useQuery({
+  const { data: recentActivity, isLoading: activityLoading } = useQuery<ActivityItem[]>({
     queryKey: ["/api/dashboard/recent-activity"],
   });
 
-  const { data: monthlyTrends, isLoading: trendsLoading } = useQuery({
+  const { data: monthlyTrends, isLoading: trendsLoading } = useQuery<MonthlyTrend[]>({
     queryKey: ["/api/dashboard/monthly-trends"],
   });
 
