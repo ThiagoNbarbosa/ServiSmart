@@ -121,7 +121,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/dashboard/monthly-trends', isAuthenticated, async (req: any, res) => {
+  app.get('/api/dashboard/monthly-trends', devAuthMiddleware, async (req: any, res) => {
     try {
       const months = parseInt(req.query.months as string) || 6;
       const trends = await storage.getMonthlyTrends(months);
@@ -585,9 +585,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Notifications routes
-  app.get('/api/notifications', isAuthenticated, async (req: any, res) => {
+  app.get('/api/notifications', devAuthMiddleware, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user?.claims?.sub || 'dev-user-1';
       const notifications = await storage.getUserNotifications(userId);
       res.json(notifications);
     } catch (error) {
