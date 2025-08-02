@@ -83,9 +83,10 @@ export default function RecentActivity({ data, isLoading }: RecentActivityProps)
     }
   ];
 
-  const formatTimeAgo = (date: Date) => {
+  const formatTimeAgo = (date: Date | string) => {
     const now = new Date();
-    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    const targetDate = date instanceof Date ? date : new Date(date);
+    const diffInMinutes = Math.floor((now.getTime() - targetDate.getTime()) / (1000 * 60));
     
     if (diffInMinutes < 1) return 'agora mesmo';
     if (diffInMinutes < 60) return `${diffInMinutes} minutos atrás`;

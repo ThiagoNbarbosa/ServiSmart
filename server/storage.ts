@@ -317,54 +317,68 @@ export class DatabaseStorage implements IStorage {
 
   // Dashboard Data operations
   async getDashboardMetrics(filters?: any): Promise<DashboardMetrics> {
-    let baseQuery = db.select().from(workOrders);
-    
+    // Build conditions for filtering
+    const conditions = [];
     if (filters) {
-      const conditions = [];
       if (filters.startDate) conditions.push(gte(workOrders.createdAt, new Date(filters.startDate)));
       if (filters.endDate) conditions.push(lte(workOrders.createdAt, new Date(filters.endDate)));
-      if (filters.technicianId) conditions.push(eq(workOrders.technicianId, filters.technicianId));
-      if (filters.contractId) conditions.push(eq(workOrders.contractId, filters.contractId));
+      if (filters.technicianId) conditions.push(eq(workOrders.technicianId, parseInt(filters.technicianId)));
+      if (filters.contractId) conditions.push(eq(workOrders.contractId, parseInt(filters.contractId)));
       if (filters.collaboratorId) conditions.push(eq(workOrders.reportElaboratorId, filters.collaboratorId));
-      
-      if (conditions.length > 0) {
-        baseQuery = baseQuery.where(and(...conditions));
-      }
     }
 
+    const baseCondition = conditions.length > 0 ? and(...conditions) : undefined;
+
+    // Get total count
     const [totalResult] = await db
       .select({ count: count() })
-      .from(workOrders);
+      .from(workOrders)
+      .where(baseCondition);
 
+    // Get count by status
     const [pendingResult] = await db
       .select({ count: count() })
       .from(workOrders)
-      .where(eq(workOrders.status, 'PENDENTE'));
+      .where(baseCondition ? and(baseCondition, eq(workOrders.status, 'PENDENTE')) : eq(workOrders.status, 'PENDENTE'));
 
     const [completedResult] = await db
       .select({ count: count() })
       .from(workOrders)
-      .where(eq(workOrders.status, 'CONCLUIDA'));
-
-    const [overdueResult] = await db
-      .select({ count: count() })
-      .from(workOrders)
-      .where(and(
-        eq(workOrders.status, 'VENCIDA'),
-        sql`${workOrders.dueDate} < NOW()`
-      ));
+      .where(baseCondition ? and(baseCondition, eq(workOrders.status, 'CONCLUIDA')) : eq(workOrders.status, 'CONCLUIDA'));
 
     const [scheduledResult] = await db
       .select({ count: count() })
       .from(workOrders)
-      .where(eq(workOrders.status, 'AGENDADA'));
+      .where(baseCondition ? and(baseCondition, eq(workOrders.status, 'AGENDADA')) : eq(workOrders.status, 'AGENDADA'));
 
+    // Get overdue count (items with due date in the past that are not completed)
+    const [overdueResult] = await db
+      .select({ count: count() })
+      .from(workOrders)
+      .where(
+        baseCondition 
+          ? and(
+              baseCondition,
+              sql`${workOrders.dueDate} < NOW()`,
+              sql`${workOrders.status} != 'CONCLUIDA'`
+            )
+          : and(
+              sql`${workOrders.dueDate} < NOW()`,
+              sql`${workOrders.status} != 'CONCLUIDA'`
+            )
+      );
+
+    // Calculate average completion time for completed orders
     const [avgTimeResult] = await db
       .select({ 
         avgTime: avg(sql`EXTRACT(EPOCH FROM (${workOrders.completedDate} - ${workOrders.createdAt}))/3600`)
       })
       .from(workOrders)
-      .where(eq(workOrders.status, 'CONCLUIDA'));
+      .where(
+        baseCondition 
+          ? and(baseCondition, eq(workOrders.status, 'CONCLUIDA'), sql`${workOrders.completedDate} IS NOT NULL`)
+          : and(eq(workOrders.status, 'CONCLUIDA'), sql`${workOrders.completedDate} IS NOT NULL`)
+      );
 
     const totalOS = totalResult.count;
     const completedOS = completedResult.count;
@@ -382,55 +396,172 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getStatusDistribution(filters?: any): Promise<StatusDistribution> {
-    const [result] = await db
+    // Build conditions for filtering
+    const conditions = [];
+    if (filters) {
+      if (filters.startDate) conditions.push(gte(workOrders.createdAt, new Date(filters.startDate)));
+      if (filters.endDate) conditions.push(lte(workOrders.createdAt, new Date(filters.endDate)));
+      if (filters.technicianId) conditions.push(eq(workOrders.technicianId, parseInt(filters.technicianId)));
+      if (filters.contractId) conditions.push(eq(workOrders.contractId, parseInt(filters.contractId)));
+      if (filters.collaboratorId) conditions.push(eq(workOrders.reportElaboratorId, filters.collaboratorId));
+    }
+
+    const baseCondition = conditions.length > 0 ? and(...conditions) : undefined;
+
+    // Get status distribution - remove WHERE clause if no conditions to ensure all data is fetched
+    const query = db
       .select({
         status: workOrders.status,
         count: count()
       })
       .from(workOrders)
       .groupBy(workOrders.status);
+    
+    const results = baseCondition ? await query.where(baseCondition) : await query;
 
-    const distribution = {
+    const distribution: StatusDistribution = {
       PENDENTE: 0,
       AGENDADA: 0,
       CONCLUIDA: 0,
       VENCIDA: 0,
     };
 
-    // This would normally aggregate the results properly
-    // For now, returning sample structure
+    // Map results to distribution object
+    results.forEach(result => {
+      if (result.status in distribution) {
+        distribution[result.status as keyof StatusDistribution] = result.count;
+      }
+    });
+
     return distribution;
   }
 
   async getTechnicianStats(filters?: any): Promise<TechnicianStats[]> {
+    // Build conditions for filtering work orders
+    const conditions = [];
+    if (filters) {
+      if (filters.startDate) conditions.push(gte(workOrders.createdAt, new Date(filters.startDate)));
+      if (filters.endDate) conditions.push(lte(workOrders.createdAt, new Date(filters.endDate)));
+      if (filters.contractId) conditions.push(eq(workOrders.contractId, parseInt(filters.contractId)));
+    }
+
+    // Get technician stats with completed work orders
     const stats = await db
       .select({
         id: technicians.id,
         name: technicians.name,
-        completedOS: count(workOrders.id),
+        email: technicians.email,
+        completedOS: count(sql`CASE WHEN ${workOrders.status} = 'CONCLUIDA' THEN 1 END`),
+        totalOS: count(workOrders.id),
+        avgCompletionTime: avg(sql`CASE WHEN ${workOrders.status} = 'CONCLUIDA' AND ${workOrders.completedDate} IS NOT NULL THEN EXTRACT(EPOCH FROM (${workOrders.completedDate} - ${workOrders.createdAt}))/3600 END`)
       })
       .from(technicians)
       .leftJoin(workOrders, and(
         eq(technicians.id, workOrders.technicianId),
-        eq(workOrders.status, 'CONCLUIDA')
+        ...(conditions.length > 0 ? conditions : [])
       ))
-      .groupBy(technicians.id, technicians.name);
+      .where(eq(technicians.active, true))
+      .groupBy(technicians.id, technicians.name, technicians.email);
 
     return stats.map(stat => ({
-      ...stat,
-      successRate: Math.random() * 20 + 80, // This would be calculated properly
-      averageTime: Math.random() * 2 + 1,
+      id: stat.id,
+      name: stat.name,
+      completedOS: stat.completedOS,
+      successRate: stat.totalOS > 0 ? Math.round((stat.completedOS / stat.totalOS) * 100) : 0,
+      averageTime: Number(stat.avgCompletionTime) || 0,
     }));
   }
 
   async getRecentActivity(limit: number = 10): Promise<ActivityItem[]> {
-    // This would be implemented with proper activity tracking
-    return [];
+    // Get recent work order activities from the database
+    const recentWorkOrders = await db
+      .select({
+        id: workOrders.id,
+        osNumber: workOrders.osNumber,
+        title: workOrders.title,
+        status: workOrders.status,
+        createdAt: workOrders.createdAt,
+        completedDate: workOrders.completedDate,
+        updatedAt: workOrders.updatedAt,
+        technicianName: technicians.name,
+        createdByUser: users.firstName,
+      })
+      .from(workOrders)
+      .leftJoin(technicians, eq(workOrders.technicianId, technicians.id))
+      .leftJoin(users, eq(workOrders.createdBy, users.id))
+      .orderBy(desc(workOrders.updatedAt))
+      .limit(limit * 2); // Get more to filter and format
+
+    const activities: ActivityItem[] = [];
+
+    for (const wo of recentWorkOrders) {
+      if (activities.length >= limit) break;
+
+      // Create activity based on work order status and dates
+      if (wo.status === 'CONCLUIDA' && wo.completedDate) {
+        activities.push({
+          id: wo.id,
+          type: 'OS_COMPLETED',
+          description: `OS ${wo.osNumber} foi concluída por ${wo.technicianName || 'Técnico'}`,
+          workOrderId: wo.id,
+          userName: wo.technicianName || undefined,
+          createdAt: wo.completedDate,
+        });
+      } else if (wo.status === 'PENDENTE' && wo.createdAt) {
+        activities.push({
+          id: wo.id + 1000, // Offset to avoid conflicts
+          type: 'OS_CREATED',
+          description: `OS ${wo.osNumber} foi criada: ${wo.title}`,
+          workOrderId: wo.id,
+          userName: wo.createdByUser || undefined,
+          createdAt: wo.createdAt,
+        });
+      }
+    }
+
+    // Sort by date descending and return limited results
+    return activities
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, limit);
   }
 
   async getMonthlyTrends(months: number = 6): Promise<MonthlyTrend[]> {
-    // This would be implemented with proper date aggregation
-    return [];
+    // Get monthly aggregated data for work orders
+    const trendsData = await db
+      .select({
+        month: sql<string>`TO_CHAR(${workOrders.createdAt}, 'YYYY-MM')`,
+        created: count(workOrders.id),
+        completed: count(sql`CASE WHEN ${workOrders.status} = 'CONCLUIDA' THEN 1 END`)
+      })
+      .from(workOrders)
+      .where(gte(workOrders.createdAt, sql`NOW() - INTERVAL '${sql.raw(months.toString())} months'`))
+      .groupBy(sql`TO_CHAR(${workOrders.createdAt}, 'YYYY-MM')`)
+      .orderBy(sql`TO_CHAR(${workOrders.createdAt}, 'YYYY-MM')`);
+
+    // Format data for chart consumption
+    const trends: MonthlyTrend[] = trendsData.map(trend => ({
+      month: trend.month,
+      created: trend.created,
+      completed: trend.completed,
+    }));
+
+    // Fill in missing months with zeros if needed
+    const currentDate = new Date();
+    const allMonths: MonthlyTrend[] = [];
+    
+    for (let i = months - 1; i >= 0; i--) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const monthKey = date.toISOString().slice(0, 7); // YYYY-MM format
+      
+      const existingTrend = trends.find(t => t.month === monthKey);
+      allMonths.push(existingTrend || {
+        month: monthKey,
+        created: 0,
+        completed: 0,
+      });
+    }
+
+    return allMonths;
   }
 
   // Team management operations
