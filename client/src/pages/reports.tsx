@@ -73,11 +73,11 @@ export default function Reports() {
   const [selectedContract, setSelectedContract] = useState("all");
   const [selectedTechnician, setSelectedTechnician] = useState("all");
 
-  const { data: contracts } = useQuery({
+  const { data: contracts = [] } = useQuery<any[]>({
     queryKey: ['/api/contracts'],
   });
 
-  const { data: technicians } = useQuery({
+  const { data: technicians = [] } = useQuery<any[]>({
     queryKey: ['/api/technicians'],
   });
 
@@ -114,7 +114,8 @@ export default function Reports() {
   };
 
   return (
-    <div className="space-y-6">
+    <>
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -125,8 +126,8 @@ export default function Reports() {
         </div>
       </div>
 
-        {/* Filters */}
-        <Card>
+      {/* Filters */}
+      <Card>
           <CardHeader>
             <CardTitle>Filtros de Relatório</CardTitle>
           </CardHeader>
@@ -156,7 +157,7 @@ export default function Reports() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos os Contratos</SelectItem>
-                    {contracts?.map((contract: any) => (
+                    {contracts.map((contract: any) => (
                       <SelectItem key={contract.id} value={contract.id.toString()}>
                         {contract.name}
                       </SelectItem>
@@ -173,7 +174,7 @@ export default function Reports() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos os Técnicos</SelectItem>
-                    {technicians?.map((technician: any) => (
+                    {technicians.map((technician: any) => (
                       <SelectItem key={technician.id} value={technician.id.toString()}>
                         {technician.name}
                       </SelectItem>
@@ -197,10 +198,10 @@ export default function Reports() {
               </div>
             </div>
           </CardContent>
-        </Card>
+      </Card>
 
-        {/* Report Tabs */}
-        <Tabs defaultValue="overview" className="space-y-4">
+      {/* Report Tabs */}
+      <Tabs defaultValue="overview" className="space-y-4">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview" className="flex items-center space-x-2">
               <BarChart3 className="h-4 w-4" />
@@ -523,6 +524,6 @@ export default function Reports() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </>
   );
 }

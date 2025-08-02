@@ -177,51 +177,52 @@ export default function TeamInformation() {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Informações da Equipe</h1>
-          <p className="text-muted-foreground">
-            Gerencie membros da equipe e visualize suas atividades
-          </p>
+    <>
+      <div className="space-y-6">
+        {/* Page Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Informações da Equipe</h1>
+            <p className="text-muted-foreground">
+              Gerencie membros da equipe e visualize suas atividades
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {hasDevAccess && (
+              <span className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded-full font-medium">
+                DEV MODE
+              </span>
+            )}
+            <Button onClick={handleAddMember} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Adicionar Membro
+            </Button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {hasDevAccess && (
-            <span className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded-full font-medium">
-              DEV MODE
-            </span>
-          )}
-          <Button onClick={handleAddMember} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar Membro
-          </Button>
-        </div>
-      </div>
+        {/* Team Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {membersToDisplay.map((member: any, index: number) => {
+              const task = getUserTask(member.id);
+              const taskTeamMembers = task ? getTaskTeamMembers(task) : [];
+              const progressColor = progressColors[index % progressColors.length];
+              const progress = task?.progress || Math.floor(Math.random() * 100);
 
-      {/* Team Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {membersToDisplay.map((member: any, index: number) => {
-            const task = getUserTask(member.id);
-            const taskTeamMembers = task ? getTaskTeamMembers(task) : [];
-            const progressColor = progressColors[index % progressColors.length];
-            const progress = task?.progress || Math.floor(Math.random() * 100);
-
-            return (
-              <Card 
-                key={member.id} 
-                className="group hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:-translate-y-1"
-                onClick={() => handleMemberAction('details', member)}
-              >
-                <CardContent className="p-6">
-                  {/* Header with Avatar and Menu */}
-                  <div className="flex items-start justify-between mb-4">
-                    <img
-                      src={member.profileImageUrl}
-                      alt={`${member.firstName} ${member.lastName}`}
-                      className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
-                    />
+              return (
+                <Card 
+                  key={member.id} 
+                  className="group hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:-translate-y-1"
+                  onClick={() => handleMemberAction('details', member)}
+                >
+                  <CardContent className="p-6">
+                    {/* Header with Avatar and Menu */}
+                    <div className="flex items-start justify-between mb-4">
+                      <img
+                        src={member.profileImageUrl}
+                        alt={`${member.firstName} ${member.lastName}`}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
+                      />
                     
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -360,6 +361,6 @@ export default function TeamInformation() {
         onClose={handleCloseDeleteDialog}
         member={memberToDelete}
       />
-    </div>
+    </>
   );
 }
