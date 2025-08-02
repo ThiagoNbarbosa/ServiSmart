@@ -81,6 +81,13 @@ export interface IStorage {
   getTechnicianStats(filters?: any): Promise<TechnicianStats[]>;
   getRecentActivity(limit?: number): Promise<ActivityItem[]>;
   getMonthlyTrends(months?: number): Promise<MonthlyTrend[]>;
+
+  // Team Member operations
+  getTeamMembers(): Promise<User[]>;
+  getTeamMember(id: string): Promise<User | undefined>;
+  createTeamMember(userData: UpsertUser): Promise<User>;
+  updateTeamMember(id: string, userData: Partial<UpsertUser>): Promise<User>;
+  deleteTeamMember(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -567,6 +574,48 @@ export class DatabaseStorage implements IStorage {
   // Team management operations
   async getTeamMembers(): Promise<User[]> {
     return await db.select().from(users).where(eq(users.showInTeam, true));
+  }
+
+  async getTeamMember(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async createTeamMember(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...userData,
+        showInTeam: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    return user;
+  }
+
+  async updateTeamMember(id: string, userData: Partial<UpsertUser>): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({
+        ...userData,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  async deleteTeamMember(id: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ 
+        showInTeam: false,
+        isActive: false,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id));
   }
 
   async getTeamTasks(): Promise<TeamTask[]> {

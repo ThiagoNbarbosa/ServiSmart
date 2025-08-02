@@ -243,6 +243,25 @@ export const insertDashboardFilterSchema = createInsertSchema(dashboardFilters).
 export const insertTeamTaskSchema = createInsertSchema(teamTasks).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertEnvironmentConfigSchema = createInsertSchema(environmentConfig).omit({ id: true, updatedAt: true });
 
+// Team member schema for API validation
+export const insertTeamMemberSchema = createInsertSchema(users).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true,
+  isDev: true 
+}).extend({
+  firstName: z.string().min(1, "Nome é obrigatório"),
+  lastName: z.string().min(1, "Sobrenome é obrigatório"), 
+  email: z.string().email("Email inválido").optional(),
+  position: z.string().min(1, "Posição é obrigatória"),
+  phone: z.string().optional(),
+  location: z.string().optional(),
+  department: z.string().optional(),
+  bio: z.string().optional(),
+  profileImageUrl: z.string().url("URL da imagem inválida").optional(),
+  userLevel: z.enum(["DEV", "CONTRACT_MANAGER", "REPORT_ELABORATOR", "SUPERVISOR", "ADMIN", "TECHNICIAN"]).default("TECHNICIAN")
+});
+
 // Types
 // Contract Managers table (specialized user roles)
 export const contractManagers = pgTable("contract_managers", {
@@ -325,6 +344,7 @@ export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertDashboardFilter = z.infer<typeof insertDashboardFilterSchema>;
 export type DashboardFilter = typeof dashboardFilters.$inferSelect;
+export type InsertTeamMember = z.infer<typeof insertTeamMemberSchema>;
 
 // Dashboard data types
 export type DashboardMetrics = {
