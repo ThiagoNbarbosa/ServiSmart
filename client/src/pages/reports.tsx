@@ -10,42 +10,62 @@ import { Input } from "@/components/ui/input";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { ArrowLeft, Download, FileText, BarChart3, PieChart, TrendingUp, Calendar } from "lucide-react";
 import { Link } from "wouter";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartsePieChart, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartsePieChart, Pie, Cell } from "recharts";
 
-interface ReportData {
-  workOrdersByStatus: Array<{ name: string; value: number; color: string }>;
-  workOrdersByPriority: Array<{ name: string; value: number; color: string }>;
-  monthlyTrends: Array<{ month: string; completed: number; pending: number; total: number }>;
-  technicianPerformance: Array<{ name: string; completed: number; pending: number; efficiency: number }>;
+interface StatusDistribution {
+  PENDENTE: number;
+  AGENDADA: number;
+  CONCLUIDA: number;
+  VENCIDA: number;
 }
 
-const mockReportData: ReportData = {
-  workOrdersByStatus: [
-    { name: 'Pendente', value: 35, color: '#fbbf24' },
-    { name: 'Em Andamento', value: 20, color: '#3b82f6' },
-    { name: 'Concluída', value: 40, color: '#10b981' },
-    { name: 'Vencida', value: 5, color: '#ef4444' },
-  ],
-  workOrdersByPriority: [
-    { name: 'Baixa', value: 45, color: '#10b981' },
-    { name: 'Média', value: 35, color: '#fbbf24' },
-    { name: 'Alta', value: 15, color: '#f97316' },
-    { name: 'Urgente', value: 5, color: '#ef4444' },
-  ],
-  monthlyTrends: [
-    { month: 'Jan', completed: 45, pending: 12, total: 57 },
-    { month: 'Fev', completed: 52, pending: 8, total: 60 },
-    { month: 'Mar', completed: 38, pending: 15, total: 53 },
-    { month: 'Abr', completed: 61, pending: 9, total: 70 },
-    { month: 'Mai', completed: 48, pending: 14, total: 62 },
-    { month: 'Jun', completed: 55, pending: 11, total: 66 },
-  ],
-  technicianPerformance: [
-    { name: 'Felipe Santos', completed: 45, pending: 3, efficiency: 93.8 },
-    { name: 'Ana Costa', completed: 38, pending: 5, efficiency: 88.4 },
-    { name: 'Carlos Silva', completed: 42, pending: 8, efficiency: 84.0 },
-    { name: 'Marina Oliveira', completed: 35, pending: 4, efficiency: 89.7 },
-  ],
+interface PriorityDistribution {
+  BAIXA: number;
+  MEDIA: number;
+  ALTA: number;
+  URGENTE: number;
+}
+
+interface MonthlyTrend {
+  month: string;
+  created: number;
+  completed: number;
+}
+
+interface TechnicianStats {
+  id: number;
+  name: string;
+  completedOS: number;
+  successRate: number;
+  averageTime: number;
+}
+
+const STATUS_COLORS = {
+  PENDENTE: '#fbbf24',
+  AGENDADA: '#3b82f6',
+  CONCLUIDA: '#10b981',
+  VENCIDA: '#ef4444',
+};
+
+const PRIORITY_COLORS = {
+  BAIXA: '#10b981',
+  MEDIA: '#fbbf24',
+  ALTA: '#f97316',
+  URGENTE: '#ef4444',
+};
+
+const STATUS_LABELS = {
+  PENDENTE: 'Pendente',
+  AGENDADA: 'Em Andamento',
+  CONCLUIDA: 'Concluída',
+  VENCIDA: 'Vencida',
+};
+
+const PRIORITY_LABELS = {
+  BAIXA: 'Baixa',
+  MEDIA: 'Média',
+  ALTA: 'Alta',
+  URGENTE: 'Urgente',
 };
 
 export default function Reports() {
@@ -59,6 +79,29 @@ export default function Reports() {
 
   const { data: technicians } = useQuery({
     queryKey: ['/api/technicians'],
+  });
+
+  // Build filters object
+  const filters = {
+    ...(selectedContract !== "all" && { contractId: selectedContract }),
+    ...(selectedTechnician !== "all" && { technicianId: selectedTechnician }),
+  };
+
+  // Fetch real data from API
+  const { data: statusDistribution, isLoading: statusLoading } = useQuery<StatusDistribution>({
+    queryKey: ['/api/dashboard/status-distribution', filters],
+  });
+
+  const { data: priorityDistribution, isLoading: priorityLoading } = useQuery<PriorityDistribution>({
+    queryKey: ['/api/dashboard/priority-distribution', filters],
+  });
+
+  const { data: monthlyTrends, isLoading: trendsLoading } = useQuery<MonthlyTrend[]>({
+    queryKey: ['/api/dashboard/monthly-trends', { months: 6 }],
+  });
+
+  const { data: technicianStats, isLoading: techLoading } = useQuery<TechnicianStats[]>({
+    queryKey: ['/api/dashboard/technician-stats', filters],
   });
 
   const generateReport = (type: string) => {
@@ -193,17 +236,41 @@ export default function Reports() {
                   <CardTitle>Ordens de Serviço por Status</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <RechartsePieChart>
-                      <RechartsePieChart data={mockReportData.workOrdersByStatus}>
-                        {mockReportData.workOrdersByStatus.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
+                  {statusLoading ? (
+                    <div className="h-[300px] flex items-center justify-center">
+                      <span className="text-gray-500">Carregando...</span>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <RechartsePieChart>
+                        <Pie 
+                          data={statusDistribution ? Object.entries(statusDistribution)
+                            .filter(([_, value]) => value > 0)
+                            .map(([key, value]) => ({
+                              name: STATUS_LABELS[key as keyof typeof STATUS_LABELS],
+                              value,
+                              color: STATUS_COLORS[key as keyof typeof STATUS_COLORS]
+                            })) : []
+                          }
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {statusDistribution && Object.entries(statusDistribution)
+                            .filter(([_, value]) => value > 0)
+                            .map(([key], index) => (
+                              <Cell key={`cell-${index}`} fill={STATUS_COLORS[key as keyof typeof STATUS_COLORS]} />
+                            ))
+                          }
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
                       </RechartsePieChart>
-                      <Tooltip />
-                      <Legend />
-                    </RechartsePieChart>
-                  </ResponsiveContainer>
+                    </ResponsiveContainer>
+                  )}
                 </CardContent>
               </Card>
 
@@ -213,15 +280,31 @@ export default function Reports() {
                   <CardTitle>Ordens de Serviço por Prioridade</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={mockReportData.workOrdersByPriority}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="value" fill="#3b82f6" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  {priorityLoading ? (
+                    <div className="h-[300px] flex items-center justify-center">
+                      <span className="text-gray-500">Carregando...</span>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={priorityDistribution ? Object.entries(priorityDistribution)
+                        .map(([key, value]) => ({
+                          name: PRIORITY_LABELS[key as keyof typeof PRIORITY_LABELS],
+                          value,
+                          color: PRIORITY_COLORS[key as keyof typeof PRIORITY_COLORS]
+                        })) : []
+                      }>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="value">
+                          {priorityDistribution && Object.entries(priorityDistribution).map(([key], index) => (
+                            <Cell key={`cell-${index}`} fill={PRIORITY_COLORS[key as keyof typeof PRIORITY_COLORS]} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
                 </CardContent>
               </Card>
 
@@ -231,17 +314,23 @@ export default function Reports() {
                   <CardTitle>Tendência Mensal</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={mockReportData.monthlyTrends}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="completed" fill="#10b981" name="Concluídas" />
-                      <Bar dataKey="pending" fill="#fbbf24" name="Pendentes" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  {trendsLoading ? (
+                    <div className="h-[300px] flex items-center justify-center">
+                      <span className="text-gray-500">Carregando...</span>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={monthlyTrends || []}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="completed" fill="#10b981" name="Concluídas" />
+                        <Bar dataKey="created" fill="#3b82f6" name="Criadas" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -268,30 +357,30 @@ export default function Reports() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {mockReportData.technicianPerformance.map((technician, index) => (
-                          <TableRow key={index}>
+                        {technicianStats?.map((technician) => (
+                          <TableRow key={technician.id}>
                             <TableCell className="font-medium">{technician.name}</TableCell>
-                            <TableCell>{technician.completed}</TableCell>
-                            <TableCell>{technician.pending}</TableCell>
+                            <TableCell>{technician.completedOS}</TableCell>
+                            <TableCell>{technician.completedOS > 0 ? 0 : 0}</TableCell>
                             <TableCell>
                               <div className="flex items-center space-x-2">
                                 <div className="w-20 bg-gray-200 rounded-full h-2">
                                   <div 
                                     className="bg-green-500 h-2 rounded-full" 
-                                    style={{ width: `${technician.efficiency}%` }}
+                                    style={{ width: `${technician.successRate}%` }}
                                   ></div>
                                 </div>
-                                <span className="text-sm">{technician.efficiency}%</span>
+                                <span className="text-sm">{technician.successRate}%</span>
                               </div>
                             </TableCell>
                             <TableCell>
                               <Badge className={
-                                technician.efficiency > 90 ? 'bg-green-100 text-green-800' :
-                                technician.efficiency > 80 ? 'bg-yellow-100 text-yellow-800' :
+                                technician.successRate > 90 ? 'bg-green-100 text-green-800' :
+                                technician.successRate > 80 ? 'bg-yellow-100 text-yellow-800' :
                                 'bg-red-100 text-red-800'
                               }>
-                                {technician.efficiency > 90 ? 'Excelente' :
-                                 technician.efficiency > 80 ? 'Bom' : 'Precisa Melhorar'}
+                                {technician.successRate > 90 ? 'Excelente' :
+                                 technician.successRate > 80 ? 'Bom' : 'Precisa Melhorar'}
                               </Badge>
                             </TableCell>
                           </TableRow>

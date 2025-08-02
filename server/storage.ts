@@ -81,6 +81,7 @@ export interface IStorage {
   getTechnicianStats(filters?: any): Promise<TechnicianStats[]>;
   getRecentActivity(limit?: number): Promise<ActivityItem[]>;
   getMonthlyTrends(months?: number): Promise<MonthlyTrend[]>;
+  getPriorityDistribution(filters?: any): Promise<Record<string, number>>;
 
   // Team Member operations
   getTeamMembers(): Promise<User[]>;
@@ -569,6 +570,46 @@ export class DatabaseStorage implements IStorage {
     }
 
     return allMonths;
+  }
+
+  async getPriorityDistribution(filters?: any): Promise<Record<string, number>> {
+    // Build conditions for filtering
+    const conditions = [];
+    if (filters) {
+      if (filters.startDate) conditions.push(gte(workOrders.createdAt, new Date(filters.startDate)));
+      if (filters.endDate) conditions.push(lte(workOrders.createdAt, new Date(filters.endDate)));
+      if (filters.contractId) conditions.push(eq(workOrders.contractId, parseInt(filters.contractId)));
+      if (filters.technicianId) conditions.push(eq(workOrders.technicianId, parseInt(filters.technicianId)));
+    }
+
+    const baseCondition = conditions.length > 0 ? and(...conditions) : undefined;
+
+    // Get distribution of work orders by priority
+    const query = db
+      .select({
+        priority: workOrders.priority,
+        count: count(workOrders.id),
+      })
+      .from(workOrders)
+      .groupBy(workOrders.priority);
+    
+    const results = baseCondition ? await query.where(baseCondition) : await query;
+
+    const distribution: Record<string, number> = {
+      BAIXA: 0,
+      MEDIA: 0,
+      ALTA: 0,
+      URGENTE: 0,
+    };
+
+    // Map results to distribution object
+    results.forEach(result => {
+      if (result.priority && result.priority in distribution) {
+        distribution[result.priority] = result.count;
+      }
+    });
+
+    return distribution;
   }
 
   // Team management operations

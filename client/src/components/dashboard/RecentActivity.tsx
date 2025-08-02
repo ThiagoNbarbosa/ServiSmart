@@ -50,48 +50,30 @@ export default function RecentActivity({ data, isLoading }: RecentActivityProps)
     );
   }
 
-  const activities = data && data.length > 0 ? data : [
-    {
-      id: 1,
-      type: 'OS_COMPLETED',
-      description: 'Carlos Santos concluiu OS #1247',
-      createdAt: new Date(Date.now() - 2 * 60 * 1000)
-    },
-    {
-      id: 2,
-      type: 'OS_CREATED', 
-      description: 'Nova OS #1248 foi criada para Contrato A',
-      createdAt: new Date(Date.now() - 5 * 60 * 1000)
-    },
-    {
-      id: 3,
-      type: 'COMMENT_ADDED',
-      description: 'Maria Silva adicionou comentário em OS #1243',
-      createdAt: new Date(Date.now() - 8 * 60 * 1000)
-    },
-    {
-      id: 4,
-      type: 'OS_OVERDUE',
-      description: 'OS #1240 está vencida há 2 dias',
-      createdAt: new Date(Date.now() - 15 * 60 * 1000)
-    },
-    {
-      id: 5,
-      type: 'IMPORT_COMPLETED',
-      description: 'Importação de 15 novas OS foi concluída',
-      createdAt: new Date(Date.now() - 25 * 60 * 1000)
-    }
-  ];
+  const activities = data || [];
 
-  const formatTimeAgo = (date: Date | string) => {
-    const now = new Date();
-    const targetDate = date instanceof Date ? date : new Date(date);
-    const diffInMinutes = Math.floor((now.getTime() - targetDate.getTime()) / (1000 * 60));
+  const formatTimeAgo = (date: Date | string | null | undefined) => {
+    if (!date) return 'data desconhecida';
     
-    if (diffInMinutes < 1) return 'agora mesmo';
-    if (diffInMinutes < 60) return `${diffInMinutes} minutos atrás`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} horas atrás`;
-    return `${Math.floor(diffInMinutes / 1440)} dias atrás`;
+    try {
+      const now = new Date();
+      const targetDate = date instanceof Date ? date : new Date(date);
+      
+      // Check if date is valid
+      if (isNaN(targetDate.getTime())) {
+        return 'data inválida';
+      }
+      
+      const diffInMinutes = Math.floor((now.getTime() - targetDate.getTime()) / (1000 * 60));
+      
+      if (diffInMinutes < 1) return 'agora mesmo';
+      if (diffInMinutes < 60) return `${diffInMinutes} minutos atrás`;
+      if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} horas atrás`;
+      return `${Math.floor(diffInMinutes / 1440)} dias atrás`;
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'data inválida';
+    }
   };
 
   return (

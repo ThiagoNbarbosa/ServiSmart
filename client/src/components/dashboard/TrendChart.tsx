@@ -26,14 +26,7 @@ export default function TrendChart({ data, isLoading }: TrendChartProps) {
   }
 
   // Sample data if none provided
-  const chartData = data && data.length > 0 ? data : [
-    { month: 'Jan', completed: 45, created: 50 },
-    { month: 'Feb', completed: 52, created: 58 },
-    { month: 'Mar', completed: 48, created: 55 },
-    { month: 'Abr', completed: 61, created: 65 },
-    { month: 'Mai', completed: 55, created: 62 },
-    { month: 'Jun', completed: 67, created: 72 }
-  ];
+  const chartData = data || [];
 
   return (
     <Card>

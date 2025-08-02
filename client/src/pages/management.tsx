@@ -122,6 +122,8 @@ export default function Management() {
   });
 
   const getStatusColor = (status: string) => {
+    if (!status) return 'bg-gray-100 text-gray-800';
+    
     switch (status.toLowerCase()) {
       case 'ativo':
       case 'active':
