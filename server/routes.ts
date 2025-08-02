@@ -9,7 +9,7 @@ import { distributionService } from "./distributionService";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { importPatternData } from './patternImporter';
 import { analyzeExcelStructure, suggestColumnMapping } from './excelAnalyzer';
-import { insertWorkOrderSchema, insertChatMessageSchema, insertNotificationSchema } from "@shared/schema";
+import { insertWorkOrderSchema, insertChatMessageSchema, insertNotificationSchema, insertTeamMemberSchema } from "@shared/schema";
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -652,6 +652,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching team tasks:", error);
       res.status(500).json({ message: "Failed to fetch team tasks" });
+    }
+  });
+
+  // Team member CRUD operations
+  app.get("/api/team/members/:id", devAuthMiddleware, async (req, res) => {
+    try {
+      const member = await storage.getTeamMember(req.params.id);
+      if (!member) {
+        return res.status(404).json({ message: "Team member not found" });
+      }
+      res.json(member);
+    } catch (error) {
+      console.error("Error fetching team member:", error);
+      res.status(500).json({ message: "Failed to fetch team member" });
+    }
+  });
+
+  app.post("/api/team/members", devAuthMiddleware, async (req, res) => {
+    try {
+      // Validate request body
+      const validatedData = insertTeamMemberSchema.parse(req.body);
+      
+      const memberData = {
+        ...validatedData,
+        id: `team-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        showInTeam: true,
+        isActive: true,
+      };
+      
+      const member = await storage.createTeamMember(memberData);
+      res.status(201).json(member);
+    } catch (error) {
+      console.error("Error creating team member:", error);
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({ message: "Dados inválidos", details: error.message });
+      }
+      res.status(500).json({ message: "Failed to create team member" });
+    }
+  });
+
+  app.put("/api/team/members/:id", devAuthMiddleware, async (req, res) => {
+    try {
+      // Validate request body (partial update)
+      const validatedData = insertTeamMemberSchema.partial().parse(req.body);
+      
+      const member = await storage.updateTeamMember(req.params.id, validatedData);
+      res.json(member);
+    } catch (error) {
+      console.error("Error updating team member:", error);
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({ message: "Dados inválidos", details: error.message });
+      }
+      res.status(500).json({ message: "Failed to update team member" });
+    }
+  });
+
+  app.delete("/api/team/members/:id", devAuthMiddleware, async (req, res) => {
+    try {
+      await storage.deleteTeamMember(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting team member:", error);
+      res.status(500).json({ message: "Failed to delete team member" });
     }
   });
 

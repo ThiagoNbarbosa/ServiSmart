@@ -11,7 +11,8 @@ import {
   MessageCircle, 
   Phone, 
   ArrowLeft,
-  Users
+  Users,
+  Plus
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -21,6 +22,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Link } from "wouter";
 import type { User, TeamTask } from "@shared/schema";
+import { TeamMemberForm } from "@/components/team/TeamMemberForm";
+import { DeleteMemberDialog } from "@/components/team/DeleteMemberDialog";
 
 /**
  * Team Information Page Component
@@ -31,6 +34,11 @@ import type { User, TeamTask } from "@shared/schema";
 export default function TeamInformation() {
   const { user } = useAuth();
   const [selectedMember, setSelectedMember] = useState<User | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [memberToEdit, setMemberToEdit] = useState<User | null>(null);
+  const [memberToDelete, setMemberToDelete] = useState<User | null>(null);
+  const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
 
   // Fetch team members (users with showInTeam = true)
   const { data: teamMembers, isLoading } = useQuery({
@@ -64,15 +72,40 @@ export default function TeamInformation() {
   const handleMemberAction = (action: string, member: User) => {
     switch (action) {
       case 'edit':
-        console.log('Edit member:', member.id);
+        setMemberToEdit(member);
+        setFormMode('edit');
+        setIsFormOpen(true);
         break;
       case 'details':
         setSelectedMember(member);
         break;
       case 'delete':
-        console.log('Delete member:', member.id);
+        setMemberToDelete(member);
+        setIsDeleteDialogOpen(true);
         break;
     }
+  };
+
+  /**
+   * Handle adding new member
+   */
+  const handleAddMember = () => {
+    setMemberToEdit(null);
+    setFormMode('create');
+    setIsFormOpen(true);
+  };
+
+  /**
+   * Handle closing modals
+   */
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setMemberToEdit(null);
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setIsDeleteDialogOpen(false);
+    setMemberToDelete(null);
   };
 
   /**
@@ -101,81 +134,8 @@ export default function TeamInformation() {
     );
   }
 
-  // Sample data structure for demonstration (will be replaced with real data)
-  const sampleMembers = teamMembers && teamMembers.length > 0 ? teamMembers : [
-    {
-      id: "1",
-      firstName: "Alfie",
-      lastName: "Harrison", 
-      position: "Strategy Director",
-      location: "Sydney, Australia",
-      profileImageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=80&h=80",
-      userLevel: "ADMIN"
-    },
-    {
-      id: "2", 
-      firstName: "Zara",
-      lastName: "Walsh",
-      position: "Product Strategist", 
-      location: "Sydney, Australia",
-      profileImageUrl: "https://images.unsplash.com/photo-1494790108755-2616b612b3e8?ixlib=rb-4.0.3&auto=format&fit=crop&w=80&h=80",
-      userLevel: "SUPER"
-    },
-    {
-      id: "3",
-      firstName: "Jack", 
-      lastName: "Fisher",
-      position: "Product Manager",
-      location: "Melbourne, Australia", 
-      profileImageUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=80&h=80",
-      userLevel: "USER"
-    },
-    {
-      id: "4",
-      firstName: "Hannah",
-      lastName: "Perry", 
-      position: "UX Director",
-      location: "Brisbane, Australia",
-      profileImageUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=80&h=80", 
-      userLevel: "ADMIN"
-    },
-    {
-      id: "5",
-      firstName: "Blake",
-      lastName: "Morris",
-      position: "Head of Digital Designer", 
-      location: "Hobart, Australia",
-      profileImageUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=80&h=80",
-      userLevel: "USER"
-    },
-    {
-      id: "6", 
-      firstName: "Alisha",
-      lastName: "Bates",
-      position: "Head of Motion Design",
-      location: "Brisbane, Australia",
-      profileImageUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-4.0.3&auto=format&fit=crop&w=80&h=80",
-      userLevel: "USER"
-    },
-    {
-      id: "7",
-      firstName: "Victoria", 
-      lastName: "Wilson",
-      position: "Head of Creative Developer",
-      location: "Sydney, Australia",
-      profileImageUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?ixlib=rb-4.0.3&auto=format&fit=crop&w=80&h=80",
-      userLevel: "SUPER"  
-    },
-    {
-      id: "8",
-      firstName: "Luke",
-      lastName: "Elliott", 
-      position: "Head of Visual Designer",
-      location: "Perth, Australia",
-      profileImageUrl: "https://images.unsplash.com/photo-1519345182560-3f2917c472ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=80&h=80",
-      userLevel: "USER"
-    }
-  ];
+  // Use real team members data from API
+  const membersToDisplay = teamMembers || [];
 
   const progressColors = [
     "#F59E0B", // Orange/Yellow
@@ -201,17 +161,21 @@ export default function TeamInformation() {
               <h1 className="text-2xl font-bold text-gray-900">Informação de Equipe</h1>
             </div>
             
-            {hasDevAccess && (
-              <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2">
+              {hasDevAccess && (
                 <span className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded-full font-medium">
                   DEV MODE
                 </span>
-                <Button variant="outline" size="sm">
-                  <Users className="h-4 w-4 mr-1" />
-                  Gerenciar Equipe
-                </Button>
-              </div>
-            )}
+              )}
+              <Button 
+                onClick={handleAddMember}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                size="sm"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Adicionar Membro
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -219,7 +183,7 @@ export default function TeamInformation() {
       {/* Team Cards Grid */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {sampleMembers.map((member: any, index: number) => {
+          {membersToDisplay.map((member: any, index: number) => {
             const task = getUserTask(member.id);
             const taskTeamMembers = task ? getTaskTeamMembers(task) : [];
             const progressColor = progressColors[index % progressColors.length];
@@ -375,6 +339,21 @@ export default function TeamInformation() {
           </div>
         </div>
       )}
+
+      {/* Team Member Form Modal */}
+      <TeamMemberForm
+        isOpen={isFormOpen}
+        onClose={handleCloseForm}
+        member={memberToEdit}
+        mode={formMode}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteMemberDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={handleCloseDeleteDialog}
+        member={memberToDelete}
+      />
     </div>
   );
 }
