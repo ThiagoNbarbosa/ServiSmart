@@ -42,32 +42,7 @@ export default function TechnicianPerformance({ data, isLoading }: TechnicianPer
     );
   }
 
-  const technicianData = data && data.length > 0 ? data : [
-    {
-      id: 1,
-      name: "Carlos Santos",
-      profileImageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=40&h=40",
-      completedOS: 23,
-      successRate: 94,
-      averageTime: 2.1
-    },
-    {
-      id: 2,
-      name: "Maria Silva",
-      profileImageUrl: "https://images.unsplash.com/photo-1494790108755-2616b612b3e8?ixlib=rb-4.0.3&auto=format&fit=crop&w=40&h=40",
-      completedOS: 19,
-      successRate: 91,
-      averageTime: 2.4
-    },
-    {
-      id: 3,
-      name: "João Oliveira",
-      profileImageUrl: "https://images.unsplash.com/photo-1582750433449-648ed127bb54?ixlib=rb-4.0.3&auto=format&fit=crop&w=40&h=40",
-      completedOS: 15,
-      successRate: 87,
-      averageTime: 2.8
-    }
-  ];
+  const technicianData = data || [];
 
   const getSuccessRateColor = (rate: number) => {
     if (rate >= 90) return "text-green-600";

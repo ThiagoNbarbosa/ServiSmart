@@ -52,7 +52,7 @@ type TeamMemberFormData = z.infer<typeof teamMemberFormSchema>;
 interface TeamMemberFormProps {
   isOpen: boolean;
   onClose: () => void;
-  member?: User;
+  member?: User | null;
   mode: 'create' | 'edit';
 }
 

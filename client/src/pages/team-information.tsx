@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
@@ -24,6 +25,7 @@ import { Link } from "wouter";
 import type { User, TeamTask } from "@shared/schema";
 import { TeamMemberForm } from "@/components/team/TeamMemberForm";
 import { DeleteMemberDialog } from "@/components/team/DeleteMemberDialog";
+import { MemberDetailsModal } from "@/components/team/MemberDetailsModal";
 
 /**
  * Team Information Page Component
@@ -33,6 +35,7 @@ import { DeleteMemberDialog } from "@/components/team/DeleteMemberDialog";
  */
 export default function TeamInformation() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedMember, setSelectedMember] = useState<User | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -41,27 +44,38 @@ export default function TeamInformation() {
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
 
   // Fetch team members (users with showInTeam = true)
-  const { data: teamMembers, isLoading } = useQuery({
+  const { data: teamMembers = [], isLoading, error: membersError } = useQuery<User[]>({
     queryKey: ['/api/team/members'],
   });
 
   // Fetch team tasks for progress display
-  const { data: teamTasks } = useQuery({
+  const { data: teamTasks = [], isLoading: tasksLoading } = useQuery<TeamTask[]>({
     queryKey: ['/api/team/tasks'],
   });
+
+  // Show error toast if there's an error fetching members
+  useEffect(() => {
+    if (membersError) {
+      toast({
+        title: "Erro ao carregar membros",
+        description: "Não foi possível carregar os membros da equipe. Tente novamente mais tarde.",
+        variant: "destructive",
+      });
+    }
+  }, [membersError, toast]);
 
   /**
    * Get team task for specific user
    */
   const getUserTask = (userId: string): TeamTask | undefined => {
-    return teamTasks?.find((task: TeamTask) => task.userId === userId);
+    return teamTasks.find((task: TeamTask) => task.userId === userId);
   };
 
   /**
    * Get team members working on same task
    */
   const getTaskTeamMembers = (task: TeamTask): User[] => {
-    if (!task.teamMembers || !teamMembers) return [];
+    if (!task.teamMembers) return [];
     const memberIds = Array.isArray(task.teamMembers) ? task.teamMembers : [];
     return teamMembers.filter((member: User) => memberIds.includes(member.id));
   };
@@ -128,6 +142,24 @@ export default function TeamInformation() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (membersError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-white rounded-xl p-8 shadow-sm text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Erro ao carregar membros</h2>
+            <p className="text-gray-600 mb-6">
+              Não foi possível carregar os membros da equipe. Por favor, tente novamente.
+            </p>
+            <Button onClick={() => window.location.reload()} className="bg-blue-600 hover:bg-blue-700">
+              Tentar Novamente
+            </Button>
           </div>
         </div>
       </div>
@@ -323,22 +355,12 @@ export default function TeamInformation() {
         </div>
       </div>
 
-      {/* Member Details Modal/Overlay - placeholder for future implementation */}
-      {selectedMember && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4">
-              {selectedMember.firstName} {selectedMember.lastName}
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Detalhes do membro serão implementados com dados reais do banco de dados.
-            </p>
-            <Button onClick={() => setSelectedMember(null)}>
-              Fechar
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Member Details Modal */}
+      <MemberDetailsModal
+        isOpen={!!selectedMember}
+        onClose={() => setSelectedMember(null)}
+        member={selectedMember}
+      />
 
       {/* Team Member Form Modal */}
       <TeamMemberForm
