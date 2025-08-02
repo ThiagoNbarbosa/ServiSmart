@@ -342,12 +342,14 @@ export default function TeamInformation() {
         </div>
       </div>
 
+      {/* Member Details Modal */}
       <MemberDetailsModal
         isOpen={!!selectedMember}
         onClose={() => setSelectedMember(null)}
         member={selectedMember}
       />
 
+      {/* Team Member Form Modal */}
       <TeamMemberForm
         isOpen={isFormOpen}
         onClose={handleCloseForm}
@@ -355,6 +357,7 @@ export default function TeamInformation() {
         mode={formMode}
       />
 
+      {/* Delete Confirmation Dialog */}
       <DeleteMemberDialog
         isOpen={isDeleteDialogOpen}
         onClose={handleCloseDeleteDialog}

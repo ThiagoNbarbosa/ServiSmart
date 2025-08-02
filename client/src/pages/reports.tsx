@@ -114,23 +114,16 @@ export default function Reports() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Link href="/">
-              <Button variant="outline" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Voltar ao Dashboard
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Relatórios e Analytics</h1>
-              <p className="text-gray-500">Análise detalhada de performance e dados do sistema</p>
-            </div>
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Relatórios e Analytics</h1>
+          <p className="text-muted-foreground">
+            Análise detalhada de performance e dados do sistema
+          </p>
         </div>
+      </div>
 
         {/* Filters */}
         <Card>
@@ -397,17 +390,28 @@ export default function Reports() {
                   <CardTitle>Gráfico de Performance</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={mockReportData.technicianPerformance}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="completed" fill="#10b981" name="Concluídas" />
-                      <Bar dataKey="pending" fill="#fbbf24" name="Pendentes" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  {techLoading ? (
+                    <div className="h-[300px] flex items-center justify-center">
+                      <span className="text-gray-500">Carregando...</span>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={technicianStats?.map(tech => ({
+                        name: tech.name,
+                        completed: tech.completedOS,
+                        pending: 0, // We don't have pending data in current schema
+                        efficiency: tech.successRate
+                      })) || []}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="completed" fill="#10b981" name="Concluídas" />
+                        <Bar dataKey="pending" fill="#fbbf24" name="Pendentes" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
                 </CardContent>
               </Card>
             </div>
