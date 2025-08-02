@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import AppLayout from "@/components/layout/AppLayout";
 import Dashboard from "@/pages/dashboard";
 import TeamInformation from "@/pages/team-information";
 import UserManagement from "@/pages/user-management";
@@ -25,23 +26,27 @@ function Router() {
   return (
     <Switch>
       {isLoading || !isAuthenticated ? (
-        <Route path="/" component={Landing} />
-      ) : (
         <>
-          <Route path="/" component={Dashboard} />
-          <Route path="/team" component={TeamInformation} />
-          <Route path="/users" component={UserManagement} />
-          <Route path="/work-orders" component={SimpleWorkOrders} />
-          <Route path="/profile" component={UserProfile} />
-          <Route path="/management" component={Management} />
-          <Route path="/system-config" component={SystemConfig} />
-          <Route path="/reports" component={Reports} />
-          <Route path="/help" component={HelpSupport} />
+          <Route path="/" component={Landing} />
+          <Route path="/login" component={Login} />
+          <Route path="/register" component={Register} />
         </>
+      ) : (
+        <AppLayout>
+          <Switch>
+            <Route path="/" component={Dashboard} />
+            <Route path="/team" component={TeamInformation} />
+            <Route path="/users" component={UserManagement} />
+            <Route path="/work-orders" component={SimpleWorkOrders} />
+            <Route path="/profile" component={UserProfile} />
+            <Route path="/management" component={Management} />
+            <Route path="/system-config" component={SystemConfig} />
+            <Route path="/reports" component={Reports} />
+            <Route path="/help" component={HelpSupport} />
+            <Route component={NotFound} />
+          </Switch>
+        </AppLayout>
       )}
-      <Route path="/login" component={Login} />
-      <Route path="/register" component={Register} />
-      <Route component={NotFound} />
     </Switch>
   );
 }
