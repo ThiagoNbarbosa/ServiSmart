@@ -383,6 +383,113 @@ export type ActivityItem = {
   createdAt: Date;
 };
 
+// Assets/Equipment table for CMMS functionality
+export const assets = pgTable("assets", {
+  id: serial("id").primaryKey(),
+  assetCode: varchar("asset_code").unique().notNull(),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  category: varchar("category"), // HVAC, Electrical, Plumbing, etc.
+  manufacturer: varchar("manufacturer"),
+  model: varchar("model"),
+  serialNumber: varchar("serial_number"),
+  location: varchar("location"),
+  status: varchar("status").default("OPERATIONAL"), // OPERATIONAL, UNDER_MAINTENANCE, OUT_OF_SERVICE
+  purchaseDate: date("purchase_date"),
+  warrantyExpiry: date("warranty_expiry"),
+  lastMaintenanceDate: date("last_maintenance_date"),
+  nextMaintenanceDate: date("next_maintenance_date"),
+  qrCode: varchar("qr_code"),
+  documentationUrl: varchar("documentation_url"),
+  imageUrl: varchar("image_url"),
+  contractId: integer("contract_id").references(() => contracts.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Preventive Maintenance Plans
+export const maintenancePlans = pgTable("maintenance_plans", {
+  id: serial("id").primaryKey(),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  assetId: integer("asset_id").references(() => assets.id),
+  frequency: varchar("frequency").notNull(), // DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY
+  frequencyValue: integer("frequency_value").default(1), // Every X days/weeks/months
+  triggerType: varchar("trigger_type").default("TIME"), // TIME, METER, CONDITION
+  lastExecuted: timestamp("last_executed"),
+  nextDue: timestamp("next_due"),
+  isActive: boolean("is_active").default(true),
+  checklistTemplate: jsonb("checklist_template"), // JSON array of checklist items
+  estimatedDuration: integer("estimated_duration"), // in minutes
+  priority: varchar("priority").default("MEDIA"), // BAIXA, MEDIA, ALTA, URGENTE
+  technicianId: integer("technician_id").references(() => technicians.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Inventory/Parts Management
+export const inventoryItems = pgTable("inventory_items", {
+  id: serial("id").primaryKey(),
+  partNumber: varchar("part_number").unique().notNull(),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  category: varchar("category"),
+  unit: varchar("unit").default("UN"), // UN, KG, M, L
+  currentStock: decimal("current_stock", { precision: 10, scale: 2 }).default("0"),
+  minimumStock: decimal("minimum_stock", { precision: 10, scale: 2 }).default("0"),
+  maximumStock: decimal("maximum_stock", { precision: 10, scale: 2 }),
+  location: varchar("location"),
+  supplier: varchar("supplier"),
+  unitCost: decimal("unit_cost", { precision: 10, scale: 2 }),
+  imageUrl: varchar("image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Inventory Transactions
+export const inventoryTransactions = pgTable("inventory_transactions", {
+  id: serial("id").primaryKey(),
+  inventoryItemId: integer("inventory_item_id").references(() => inventoryItems.id),
+  workOrderId: integer("work_order_id").references(() => workOrders.id),
+  transactionType: varchar("transaction_type").notNull(), // IN, OUT, ADJUSTMENT
+  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+  unitCost: decimal("unit_cost", { precision: 10, scale: 2 }),
+  totalCost: decimal("total_cost", { precision: 10, scale: 2 }),
+  notes: text("notes"),
+  performedBy: varchar("performed_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// System Configuration
+export const systemConfig = pgTable("system_config", {
+  id: serial("id").primaryKey(),
+  key: varchar("key").unique().notNull(),
+  value: jsonb("value").notNull(),
+  category: varchar("category"), // GENERAL, EMAIL, NOTIFICATIONS, INTEGRATIONS
+  description: text("description"),
+  updatedBy: varchar("updated_by").references(() => users.id),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Insert schemas for new tables
+export const insertAssetSchema = createInsertSchema(assets).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertMaintenancePlanSchema = createInsertSchema(maintenancePlans).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertInventoryItemSchema = createInsertSchema(inventoryItems).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertInventoryTransactionSchema = createInsertSchema(inventoryTransactions).omit({ id: true, createdAt: true });
+export const insertSystemConfigSchema = createInsertSchema(systemConfig).omit({ id: true, updatedAt: true });
+
+// Types for new tables
+export type Asset = typeof assets.$inferSelect;
+export type InsertAsset = z.infer<typeof insertAssetSchema>;
+export type MaintenancePlan = typeof maintenancePlans.$inferSelect;
+export type InsertMaintenancePlan = z.infer<typeof insertMaintenancePlanSchema>;
+export type InventoryItem = typeof inventoryItems.$inferSelect;
+export type InsertInventoryItem = z.infer<typeof insertInventoryItemSchema>;
+export type InventoryTransaction = typeof inventoryTransactions.$inferSelect;
+export type InsertInventoryTransaction = z.infer<typeof insertInventoryTransactionSchema>;
+export type SystemConfig = typeof systemConfig.$inferSelect;
+export type InsertSystemConfig = z.infer<typeof insertSystemConfigSchema>;
+
 export type MonthlyTrend = {
   month: string;
   completed: number;

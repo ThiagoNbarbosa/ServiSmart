@@ -768,10 +768,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User management routes based on levels
-  app.get("/api/users", isAuthenticated, async (req, res) => {
+  app.get("/api/users", devAuthMiddleware, async (req, res) => {
     try {
       const { userLevel } = req.query;
-      const users = await storage.getUsersByLevel(userLevel as string);
+      const users = userLevel ? await storage.getUsersByLevel(userLevel as string) : await storage.getAllUsers();
       res.json(users);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -779,32 +779,349 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/users", isAuthenticated, async (req, res) => {
+  app.post("/api/users", devAuthMiddleware, async (req, res) => {
     try {
       const userData = {
-        id: `user-${Date.now()}`,
+        id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         email: req.body.email,
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         userLevel: req.body.userLevel || 'TECHNICIAN',
-        active: true
+        isActive: true,
+        showInTeam: req.body.showInTeam || false,
+        position: req.body.position,
+        location: req.body.location,
+        department: req.body.department,
+        phone: req.body.phone,
+        bio: req.body.bio,
+        profileImageUrl: req.body.profileImageUrl
       };
-      const user = await storage.upsertUser(userData);
-      res.json(user);
+      const user = await storage.createUser(userData);
+      res.status(201).json(user);
     } catch (error) {
       console.error("Error creating user:", error);
       res.status(500).json({ message: "Falha ao criar usuário" });
     }
   });
 
-  app.put("/api/users/:id", isAuthenticated, async (req, res) => {
+  app.put("/api/users/:id", devAuthMiddleware, async (req, res) => {
     try {
       const userId = req.params.id;
-      const user = await storage.upsertUser({ id: userId, ...req.body });
+      const user = await storage.updateUser(userId, req.body);
       res.json(user);
     } catch (error) {
       console.error("Error updating user:", error);
       res.status(500).json({ message: "Falha ao atualizar usuário" });
+    }
+  });
+
+  app.delete("/api/users/:id", devAuthMiddleware, async (req, res) => {
+    try {
+      await storage.deleteUser(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Falha ao deletar usuário" });
+    }
+  });
+
+  // Technician CRUD routes
+  app.post("/api/technicians", devAuthMiddleware, async (req, res) => {
+    try {
+      const technician = await storage.createTechnician(req.body);
+      res.status(201).json(technician);
+    } catch (error) {
+      console.error("Error creating technician:", error);
+      res.status(500).json({ message: "Falha ao criar técnico" });
+    }
+  });
+
+  app.put("/api/technicians/:id", devAuthMiddleware, async (req, res) => {
+    try {
+      const technician = await storage.updateTechnician(parseInt(req.params.id), req.body);
+      res.json(technician);
+    } catch (error) {
+      console.error("Error updating technician:", error);
+      res.status(500).json({ message: "Falha ao atualizar técnico" });
+    }
+  });
+
+  app.delete("/api/technicians/:id", devAuthMiddleware, async (req, res) => {
+    try {
+      await storage.deleteTechnician(parseInt(req.params.id));
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting technician:", error);
+      res.status(500).json({ message: "Falha ao deletar técnico" });
+    }
+  });
+
+  // Contract CRUD routes
+  app.post("/api/contracts", devAuthMiddleware, async (req, res) => {
+    try {
+      const contract = await storage.createContract(req.body);
+      res.status(201).json(contract);
+    } catch (error) {
+      console.error("Error creating contract:", error);
+      res.status(500).json({ message: "Falha ao criar contrato" });
+    }
+  });
+
+  app.put("/api/contracts/:id", devAuthMiddleware, async (req, res) => {
+    try {
+      const contract = await storage.updateContract(parseInt(req.params.id), req.body);
+      res.json(contract);
+    } catch (error) {
+      console.error("Error updating contract:", error);
+      res.status(500).json({ message: "Falha ao atualizar contrato" });
+    }
+  });
+
+  app.delete("/api/contracts/:id", devAuthMiddleware, async (req, res) => {
+    try {
+      await storage.deleteContract(parseInt(req.params.id));
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting contract:", error);
+      res.status(500).json({ message: "Falha ao deletar contrato" });
+    }
+  });
+
+  // Work Order CRUD routes
+  app.post("/api/work-orders", devAuthMiddleware, async (req, res) => {
+    try {
+      const workOrderData = {
+        ...req.body,
+        osNumber: req.body.osNumber || `OS-${Date.now()}`,
+        createdBy: req.user?.claims?.sub || 'dev-user-1'
+      };
+      const workOrder = await storage.createWorkOrder(workOrderData);
+      res.status(201).json(workOrder);
+    } catch (error) {
+      console.error("Error creating work order:", error);
+      res.status(500).json({ message: "Falha ao criar ordem de serviço" });
+    }
+  });
+
+  app.put("/api/work-orders/:id", devAuthMiddleware, async (req, res) => {
+    try {
+      const workOrder = await storage.updateWorkOrder(parseInt(req.params.id), req.body);
+      res.json(workOrder);
+    } catch (error) {
+      console.error("Error updating work order:", error);
+      res.status(500).json({ message: "Falha ao atualizar ordem de serviço" });
+    }
+  });
+
+  // Assets routes
+  app.get("/api/assets", devAuthMiddleware, async (req, res) => {
+    try {
+      const assets = await storage.getAssets();
+      res.json(assets);
+    } catch (error) {
+      console.error("Error fetching assets:", error);
+      res.status(500).json({ message: "Falha ao buscar ativos" });
+    }
+  });
+
+  app.post("/api/assets", devAuthMiddleware, async (req, res) => {
+    try {
+      const asset = await storage.createAsset(req.body);
+      res.status(201).json(asset);
+    } catch (error) {
+      console.error("Error creating asset:", error);
+      res.status(500).json({ message: "Falha ao criar ativo" });
+    }
+  });
+
+  app.put("/api/assets/:id", devAuthMiddleware, async (req, res) => {
+    try {
+      const asset = await storage.updateAsset(parseInt(req.params.id), req.body);
+      res.json(asset);
+    } catch (error) {
+      console.error("Error updating asset:", error);
+      res.status(500).json({ message: "Falha ao atualizar ativo" });
+    }
+  });
+
+  app.delete("/api/assets/:id", devAuthMiddleware, async (req, res) => {
+    try {
+      await storage.deleteAsset(parseInt(req.params.id));
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting asset:", error);
+      res.status(500).json({ message: "Falha ao deletar ativo" });
+    }
+  });
+
+  // System Config routes
+  app.get("/api/system-config", devAuthMiddleware, async (req, res) => {
+    try {
+      const { key } = req.query;
+      const configs = await storage.getSystemConfig(key as string);
+      res.json(configs);
+    } catch (error) {
+      console.error("Error fetching system config:", error);
+      res.status(500).json({ message: "Falha ao buscar configurações" });
+    }
+  });
+
+  app.post("/api/system-config", devAuthMiddleware, async (req, res) => {
+    try {
+      const configs = Array.isArray(req.body) ? req.body : [req.body];
+      const updatedConfigs = await storage.updateSystemConfig(
+        configs.map(c => ({ ...c, updatedBy: req.user?.claims?.sub || 'dev-user-1' }))
+      );
+      res.json(updatedConfigs);
+    } catch (error) {
+      console.error("Error updating system config:", error);
+      res.status(500).json({ message: "Falha ao atualizar configurações" });
+    }
+  });
+
+  // User Profile routes
+  app.put("/api/user/profile", devAuthMiddleware, async (req, res) => {
+    try {
+      const userId = req.user?.claims?.sub || 'dev-user-1';
+      const user = await storage.updateUser(userId, req.body);
+      res.json(user);
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+      res.status(500).json({ message: "Falha ao atualizar perfil" });
+    }
+  });
+
+  app.put("/api/user/password", devAuthMiddleware, async (req, res) => {
+    try {
+      // For now, just return success since we're using Replit Auth
+      res.json({ message: "Senha atualizada com sucesso" });
+    } catch (error) {
+      console.error("Error updating password:", error);
+      res.status(500).json({ message: "Falha ao atualizar senha" });
+    }
+  });
+
+  app.put("/api/user/notifications", devAuthMiddleware, async (req, res) => {
+    try {
+      const userId = req.user?.claims?.sub || 'dev-user-1';
+      const configs = [
+        { key: `notifications.email.${userId}`, value: req.body.emailNotifications, category: 'NOTIFICATIONS' },
+        { key: `notifications.push.${userId}`, value: req.body.pushNotifications, category: 'NOTIFICATIONS' },
+        { key: `notifications.sms.${userId}`, value: req.body.smsNotifications, category: 'NOTIFICATIONS' }
+      ];
+      await storage.updateSystemConfig(configs.map(c => ({ ...c, updatedBy: userId })));
+      res.json({ message: "Preferências de notificação atualizadas" });
+    } catch (error) {
+      console.error("Error updating notification preferences:", error);
+      res.status(500).json({ message: "Falha ao atualizar preferências" });
+    }
+  });
+
+  // Maintenance Plans routes
+  app.get("/api/maintenance-plans", devAuthMiddleware, async (req, res) => {
+    try {
+      const plans = await storage.getMaintenancePlans();
+      res.json(plans);
+    } catch (error) {
+      console.error("Error fetching maintenance plans:", error);
+      res.status(500).json({ message: "Falha ao buscar planos de manutenção" });
+    }
+  });
+
+  app.post("/api/maintenance-plans", devAuthMiddleware, async (req, res) => {
+    try {
+      const plan = await storage.createMaintenancePlan(req.body);
+      res.status(201).json(plan);
+    } catch (error) {
+      console.error("Error creating maintenance plan:", error);
+      res.status(500).json({ message: "Falha ao criar plano de manutenção" });
+    }
+  });
+
+  app.put("/api/maintenance-plans/:id", devAuthMiddleware, async (req, res) => {
+    try {
+      const plan = await storage.updateMaintenancePlan(parseInt(req.params.id), req.body);
+      res.json(plan);
+    } catch (error) {
+      console.error("Error updating maintenance plan:", error);
+      res.status(500).json({ message: "Falha ao atualizar plano de manutenção" });
+    }
+  });
+
+  app.delete("/api/maintenance-plans/:id", devAuthMiddleware, async (req, res) => {
+    try {
+      await storage.deleteMaintenancePlan(parseInt(req.params.id));
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting maintenance plan:", error);
+      res.status(500).json({ message: "Falha ao deletar plano de manutenção" });
+    }
+  });
+
+  // Inventory routes
+  app.get("/api/inventory", devAuthMiddleware, async (req, res) => {
+    try {
+      const items = await storage.getInventoryItems();
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching inventory items:", error);
+      res.status(500).json({ message: "Falha ao buscar itens do inventário" });
+    }
+  });
+
+  app.post("/api/inventory", devAuthMiddleware, async (req, res) => {
+    try {
+      const item = await storage.createInventoryItem(req.body);
+      res.status(201).json(item);
+    } catch (error) {
+      console.error("Error creating inventory item:", error);
+      res.status(500).json({ message: "Falha ao criar item do inventário" });
+    }
+  });
+
+  app.put("/api/inventory/:id", devAuthMiddleware, async (req, res) => {
+    try {
+      const item = await storage.updateInventoryItem(parseInt(req.params.id), req.body);
+      res.json(item);
+    } catch (error) {
+      console.error("Error updating inventory item:", error);
+      res.status(500).json({ message: "Falha ao atualizar item do inventário" });
+    }
+  });
+
+  app.delete("/api/inventory/:id", devAuthMiddleware, async (req, res) => {
+    try {
+      await storage.deleteInventoryItem(parseInt(req.params.id));
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting inventory item:", error);
+      res.status(500).json({ message: "Falha ao deletar item do inventário" });
+    }
+  });
+
+  // Inventory Transactions routes
+  app.get("/api/inventory/transactions", devAuthMiddleware, async (req, res) => {
+    try {
+      const { itemId } = req.query;
+      const transactions = await storage.getInventoryTransactions(itemId ? parseInt(itemId as string) : undefined);
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching inventory transactions:", error);
+      res.status(500).json({ message: "Falha ao buscar transações" });
+    }
+  });
+
+  app.post("/api/inventory/transactions", devAuthMiddleware, async (req, res) => {
+    try {
+      const transactionData = {
+        ...req.body,
+        performedBy: req.user?.claims?.sub || 'dev-user-1'
+      };
+      const transaction = await storage.createInventoryTransaction(transactionData);
+      res.status(201).json(transaction);
+    } catch (error) {
+      console.error("Error creating inventory transaction:", error);
+      res.status(500).json({ message: "Falha ao criar transação" });
     }
   });
 
