@@ -8,6 +8,11 @@ import {
   notifications,
   dashboardFilters,
   teamTasks,
+  assets,
+  maintenancePlans,
+  inventoryItems,
+  inventoryTransactions,
+  systemConfig,
   type User,
   type UpsertUser,
   type InsertTechnician,
@@ -30,6 +35,16 @@ import {
   type TechnicianStats,
   type ActivityItem,
   type MonthlyTrend,
+  type Asset,
+  type InsertAsset,
+  type MaintenancePlan,
+  type InsertMaintenancePlan,
+  type InventoryItem,
+  type InsertInventoryItem,
+  type InventoryTransaction,
+  type InsertInventoryTransaction,
+  type SystemConfig,
+  type InsertSystemConfig,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, lte, sql, count, avg, sum } from "drizzle-orm";
@@ -89,6 +104,50 @@ export interface IStorage {
   createTeamMember(userData: UpsertUser): Promise<User>;
   updateTeamMember(id: string, userData: Partial<UpsertUser>): Promise<User>;
   deleteTeamMember(id: string): Promise<void>;
+
+  // Asset operations
+  getAssets(): Promise<Asset[]>;
+  getAsset(id: number): Promise<Asset | undefined>;
+  createAsset(asset: InsertAsset): Promise<Asset>;
+  updateAsset(id: number, asset: Partial<InsertAsset>): Promise<Asset>;
+  deleteAsset(id: number): Promise<void>;
+
+  // Maintenance Plan operations
+  getMaintenancePlans(): Promise<MaintenancePlan[]>;
+  getMaintenancePlan(id: number): Promise<MaintenancePlan | undefined>;
+  createMaintenancePlan(plan: InsertMaintenancePlan): Promise<MaintenancePlan>;
+  updateMaintenancePlan(id: number, plan: Partial<InsertMaintenancePlan>): Promise<MaintenancePlan>;
+  deleteMaintenancePlan(id: number): Promise<void>;
+
+  // Inventory operations
+  getInventoryItems(): Promise<InventoryItem[]>;
+  getInventoryItem(id: number): Promise<InventoryItem | undefined>;
+  createInventoryItem(item: InsertInventoryItem): Promise<InventoryItem>;
+  updateInventoryItem(id: number, item: Partial<InsertInventoryItem>): Promise<InventoryItem>;
+  deleteInventoryItem(id: number): Promise<void>;
+  
+  // Inventory Transaction operations
+  createInventoryTransaction(transaction: InsertInventoryTransaction): Promise<InventoryTransaction>;
+  getInventoryTransactions(itemId?: number): Promise<InventoryTransaction[]>;
+
+  // System Config operations
+  getSystemConfig(key?: string): Promise<SystemConfig[]>;
+  updateSystemConfig(configs: InsertSystemConfig[]): Promise<SystemConfig[]>;
+
+  // User operations for management
+  getAllUsers(): Promise<User[]>;
+  createUser(userData: UpsertUser): Promise<User>;
+  updateUser(id: string, userData: Partial<UpsertUser>): Promise<User>;
+  deleteUser(id: string): Promise<void>;
+
+  // Additional technician operations
+  deleteTechnician(id: number): Promise<void>;
+
+  // Additional contract operations
+  deleteContract(id: number): Promise<void>;
+
+  // Report Elaborators operations
+  getReportElaborators(): Promise<any[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -669,6 +728,203 @@ export class DatabaseStorage implements IStorage {
       return await db.select().from(users).where(eq(users.userLevel, userLevel));
     }
     return await db.select().from(users);
+  }
+
+  // Asset operations
+  async getAssets(): Promise<Asset[]> {
+    return await db.select().from(assets).orderBy(desc(assets.createdAt));
+  }
+
+  async getAsset(id: number): Promise<Asset | undefined> {
+    const [asset] = await db.select().from(assets).where(eq(assets.id, id));
+    return asset;
+  }
+
+  async createAsset(asset: InsertAsset): Promise<Asset> {
+    const [newAsset] = await db.insert(assets).values(asset).returning();
+    return newAsset;
+  }
+
+  async updateAsset(id: number, asset: Partial<InsertAsset>): Promise<Asset> {
+    const [updatedAsset] = await db
+      .update(assets)
+      .set({ ...asset, updatedAt: new Date() })
+      .where(eq(assets.id, id))
+      .returning();
+    return updatedAsset;
+  }
+
+  async deleteAsset(id: number): Promise<void> {
+    await db.delete(assets).where(eq(assets.id, id));
+  }
+
+  // Maintenance Plan operations
+  async getMaintenancePlans(): Promise<MaintenancePlan[]> {
+    return await db.select().from(maintenancePlans).where(eq(maintenancePlans.isActive, true));
+  }
+
+  async getMaintenancePlan(id: number): Promise<MaintenancePlan | undefined> {
+    const [plan] = await db.select().from(maintenancePlans).where(eq(maintenancePlans.id, id));
+    return plan;
+  }
+
+  async createMaintenancePlan(plan: InsertMaintenancePlan): Promise<MaintenancePlan> {
+    const [newPlan] = await db.insert(maintenancePlans).values(plan).returning();
+    return newPlan;
+  }
+
+  async updateMaintenancePlan(id: number, plan: Partial<InsertMaintenancePlan>): Promise<MaintenancePlan> {
+    const [updatedPlan] = await db
+      .update(maintenancePlans)
+      .set({ ...plan, updatedAt: new Date() })
+      .where(eq(maintenancePlans.id, id))
+      .returning();
+    return updatedPlan;
+  }
+
+  async deleteMaintenancePlan(id: number): Promise<void> {
+    await db.update(maintenancePlans).set({ isActive: false }).where(eq(maintenancePlans.id, id));
+  }
+
+  // Inventory operations
+  async getInventoryItems(): Promise<InventoryItem[]> {
+    return await db.select().from(inventoryItems).orderBy(inventoryItems.name);
+  }
+
+  async getInventoryItem(id: number): Promise<InventoryItem | undefined> {
+    const [item] = await db.select().from(inventoryItems).where(eq(inventoryItems.id, id));
+    return item;
+  }
+
+  async createInventoryItem(item: InsertInventoryItem): Promise<InventoryItem> {
+    const [newItem] = await db.insert(inventoryItems).values(item).returning();
+    return newItem;
+  }
+
+  async updateInventoryItem(id: number, item: Partial<InsertInventoryItem>): Promise<InventoryItem> {
+    const [updatedItem] = await db
+      .update(inventoryItems)
+      .set({ ...item, updatedAt: new Date() })
+      .where(eq(inventoryItems.id, id))
+      .returning();
+    return updatedItem;
+  }
+
+  async deleteInventoryItem(id: number): Promise<void> {
+    await db.delete(inventoryItems).where(eq(inventoryItems.id, id));
+  }
+
+  // Inventory Transaction operations
+  async createInventoryTransaction(transaction: InsertInventoryTransaction): Promise<InventoryTransaction> {
+    const [newTransaction] = await db.insert(inventoryTransactions).values(transaction).returning();
+    
+    // Update inventory stock based on transaction type
+    if (transaction.inventoryItemId) {
+      const item = await this.getInventoryItem(transaction.inventoryItemId);
+      if (item) {
+        let newStock = parseFloat(item.currentStock || '0');
+        const quantity = parseFloat(transaction.quantity);
+        
+        if (transaction.transactionType === 'IN') {
+          newStock += quantity;
+        } else if (transaction.transactionType === 'OUT') {
+          newStock -= quantity;
+        } else if (transaction.transactionType === 'ADJUSTMENT') {
+          newStock = quantity;
+        }
+        
+        await this.updateInventoryItem(transaction.inventoryItemId, {
+          currentStock: newStock.toString()
+        });
+      }
+    }
+    
+    return newTransaction;
+  }
+
+  async getInventoryTransactions(itemId?: number): Promise<InventoryTransaction[]> {
+    const query = db.select().from(inventoryTransactions);
+    if (itemId) {
+      return await query.where(eq(inventoryTransactions.inventoryItemId, itemId)).orderBy(desc(inventoryTransactions.createdAt));
+    }
+    return await query.orderBy(desc(inventoryTransactions.createdAt));
+  }
+
+  // System Config operations
+  async getSystemConfig(key?: string): Promise<SystemConfig[]> {
+    if (key) {
+      return await db.select().from(systemConfig).where(eq(systemConfig.key, key));
+    }
+    return await db.select().from(systemConfig);
+  }
+
+  async updateSystemConfig(configs: InsertSystemConfig[]): Promise<SystemConfig[]> {
+    const results: SystemConfig[] = [];
+    for (const config of configs) {
+      const [updatedConfig] = await db
+        .insert(systemConfig)
+        .values(config)
+        .onConflictDoUpdate({
+          target: systemConfig.key,
+          set: {
+            value: config.value,
+            updatedAt: new Date(),
+            updatedBy: config.updatedBy,
+          },
+        })
+        .returning();
+      results.push(updatedConfig);
+    }
+    return results;
+  }
+
+  // User management operations
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(users.createdAt);
+  }
+
+  async createUser(userData: UpsertUser): Promise<User> {
+    const [newUser] = await db.insert(users).values(userData).returning();
+    return newUser;
+  }
+
+  async updateUser(id: string, userData: Partial<UpsertUser>): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ ...userData, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await db.update(users).set({ isActive: false }).where(eq(users.id, id));
+  }
+
+  // Additional technician operations
+  async deleteTechnician(id: number): Promise<void> {
+    await db.update(technicians).set({ active: false }).where(eq(technicians.id, id));
+  }
+
+  // Additional contract operations
+  async deleteContract(id: number): Promise<void> {
+    await db.update(contracts).set({ active: false }).where(eq(contracts.id, id));
+  }
+
+  // Report Elaborators operations
+  async getReportElaborators(): Promise<any[]> {
+    return await db.select({
+      id: users.id,
+      name: sql`${users.firstName} || ' ' || ${users.lastName}`,
+      email: users.email,
+      position: users.position,
+      department: users.department
+    })
+    .from(users)
+    .where(and(
+      eq(users.isActive, true),
+      sql`${users.userLevel} IN ('ENGINEER', 'SUPERVISOR', 'ADMIN')`
+    ));
   }
 }
 
