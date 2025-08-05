@@ -1,0 +1,42 @@
+OBJETIVO:
+Atualizar completamente a aparência visual do dashboard do sistema MAFFENG, aplicando um tema moderno, limpo, responsivo e profissional.
+
+TAREFAS:
+
+1. INSTALAR E ATIVAR UMA BIBLIOTECA DE COMPONENTES VISUAIS
+- Instalar uma biblioteca de componentes visuais baseada em Tailwind CSS (como DaisyUI ou equivalente).
+- Habilitar um tema corporativo com aparência clara, elegante, profissional e responsiva.
+- Garantir que os componentes do sistema (cartões, botões, listas, inputs, gráficos) sejam substituídos por versões mais bonitas, acessíveis e bem organizadas.
+
+2. MELHORAR O VISUAL DOS CARDS DO DASHBOARD
+- Refatorar os cards de KPIs (Total de OS, Pendentes, Taxa de Conclusão, etc.) para usarem componentes visuais com cantos arredondados, sombra suave, ícones ilustrativos e espaçamento interno balanceado.
+- Os cartões devem transmitir leveza e profissionalismo, com destaque nos números e etiquetas em tons neutros.
+
+3. DEIXAR A INTERFACE RESPONSIVA E FLUIDA
+- Aplicar um layout responsivo com colunas adaptáveis (1, 2 ou 4 colunas dependendo do tamanho da tela).
+- Garantir que todos os blocos (indicadores, gráficos, técnicos, atividades) se reorganizem automaticamente em telas menores, mantendo a usabilidade e legibilidade.
+
+4. MELHORAR O BLOCO "PERFORMANCE POR TÉCNICO"
+- Tornar os cards dos técnicos mais visualmente atraentes, com fotos redondas, nome em destaque, e uma barra de progresso que represente visualmente a taxa de conclusão.
+- Organizar esses cards em duas colunas (ou mais) em telas grandes, e em lista empilhada no mobile.
+
+5. MELHORAR O BLOCO "ATIVIDADE RECENTE"
+- Exibir as atividades em lista moderna com divisões visuais claras, ícones representando o tipo de ação e datas formatadas.
+- Garantir que o bloco tenha rolagem interna se ultrapassar altura máxima, sem quebrar o layout geral.
+
+6. DEIXAR O LAYOUT GERAL MAIS BONITO E HARMÔNICO
+- Utilizar espaçamentos consistentes entre blocos, títulos e conteúdos.
+- Usar uma paleta de cores harmoniosa baseada em tons claros com destaques suaves.
+- Garantir uma tipografia legível com hierarquia visual adequada (títulos, subtítulos e corpo).
+
+7. APLICAR MICROINTERAÇÕES E SUAVIDADE VISUAL
+- Adicionar transições suaves entre estados (hover, click, foco), garantindo uma sensação de fluidez ao usar o sistema.
+- Garantir feedback visual adequado em todos os componentes interativos.
+
+IMPORTANTE:
+- Não alterar funcionalidades existentes.
+- Não apagar dados reais nem quebrar lógicas que já estão funcionando.
+- Apenas melhorar a **interface visual e experiência do usuário**.
+
+FINALIZAÇÃO:
+Após aplicar o novo tema e melhorias, testar o visual no desktop e mobile para garantir que a experiência seja consistente, bonita e responsiva em todos os dispositivos.
