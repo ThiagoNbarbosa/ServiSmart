@@ -103,84 +103,100 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200 dark:border-blue-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-300">
+      {/* Enhanced KPI Cards */}
+      <div className="responsive-cols-4 animate-fade-in">
+        <Card className="metric-card metric-card-blue">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold text-blue-700 dark:text-blue-300">
               Total de OS
             </CardTitle>
-            <ClipboardList className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <div className="rounded-full bg-blue-100 dark:bg-blue-900/50 p-2">
+              <ClipboardList className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+          <CardContent className="pt-0">
+            <div className="text-3xl font-bold text-blue-900 dark:text-blue-100 mb-1">
               {metricsLoading ? <Skeleton className="h-8 w-16" /> : metrics?.totalOS || 0}
             </div>
-            <p className="text-xs text-blue-600 dark:text-blue-400">
+            <div className="flex items-center text-xs text-blue-600 dark:text-blue-400">
+              <TrendingUp className="h-3 w-3 mr-1" />
               +12% desde o mês passado
-            </p>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950 dark:to-amber-900 border-amber-200 dark:border-amber-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-amber-700 dark:text-amber-300">
+        <Card className="metric-card metric-card-warning">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold text-amber-700 dark:text-amber-300">
               Pendentes
             </CardTitle>
-            <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            <div className="rounded-full bg-amber-100 dark:bg-amber-900/50 p-2">
+              <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-amber-900 dark:text-amber-100">
+          <CardContent className="pt-0">
+            <div className="text-3xl font-bold text-amber-900 dark:text-amber-100 mb-1">
               {metricsLoading ? <Skeleton className="h-8 w-16" /> : metrics?.pendingOS || 0}
             </div>
-            <p className="text-xs text-amber-600 dark:text-amber-400">
+            <div className="flex items-center text-xs text-amber-600 dark:text-amber-400">
+              <TrendingUp className="h-3 w-3 mr-1" />
               +5 desde ontem
-            </p>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-green-200 dark:border-green-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-700 dark:text-green-300">
+        <Card className="metric-card metric-card-success">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold text-green-700 dark:text-green-300">
               Taxa de Conclusão
             </CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+            <div className="rounded-full bg-green-100 dark:bg-green-900/50 p-2">
+              <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-900 dark:text-green-100">
+          <CardContent className="pt-0">
+            <div className="text-3xl font-bold text-green-900 dark:text-green-100 mb-1">
               {metricsLoading ? <Skeleton className="h-8 w-16" /> : `${metrics?.completionRate || 0}%`}
             </div>
-            <p className="text-xs text-green-600 dark:text-green-400">
+            <div className="flex items-center text-xs text-green-600 dark:text-green-400">
+              <TrendingUp className="h-3 w-3 mr-1" />
               +3% vs meta
-            </p>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 border-purple-200 dark:border-purple-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-purple-700 dark:text-purple-300">
+        <Card className="metric-card metric-card-blue">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-semibold text-purple-700 dark:text-purple-300">
               Tempo Médio
             </CardTitle>
-            <Timer className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+            <div className="rounded-full bg-purple-100 dark:bg-purple-900/50 p-2">
+              <Timer className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-900 dark:text-purple-100">
+          <CardContent className="pt-0">
+            <div className="text-3xl font-bold text-purple-900 dark:text-purple-100 mb-1">
               {metricsLoading ? <Skeleton className="h-8 w-16" /> : `${metrics?.averageTime?.toFixed(1) || 0}h`}
             </div>
-            <p className="text-xs text-purple-600 dark:text-purple-400">
+            <div className="flex items-center text-xs text-purple-600 dark:text-purple-400">
+              <TrendingUp className="h-3 w-3 mr-1 rotate-180" />
               -15min vs meta
-            </p>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Charts Row */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+      {/* Enhanced Charts Section */}
+      <div className="grid gap-6 lg:grid-cols-7 animate-slide-up">
         <div className="lg:col-span-3">
-          <StatusChart data={statusDistribution} isLoading={statusLoading} />
+          <div className="chart-container-modern">
+            <StatusChart data={statusDistribution} isLoading={statusLoading} />
+          </div>
         </div>
         <div className="lg:col-span-4">
-          <TrendChart data={monthlyTrends} isLoading={trendsLoading} />
+          <div className="chart-container-modern">
+            <TrendChart data={monthlyTrends} isLoading={trendsLoading} />
+          </div>
         </div>
       </div>
 
@@ -194,54 +210,60 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Alert Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="border-red-200 dark:border-red-800">
+      {/* Enhanced Alert Cards */}
+      <div className="responsive-grid animate-scale-in">
+        <Card className="metric-card metric-card-danger group">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2 text-red-700 dark:text-red-300">
-              <AlertTriangle className="h-4 w-4" />
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-red-700 dark:text-red-300">
+              <div className="rounded-full bg-red-100 dark:bg-red-900/50 p-1.5">
+                <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+              </div>
               OS Vencidas
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+            <div className="text-3xl font-bold text-red-600 dark:text-red-400 mb-1">
               {metrics?.overdueOS || 0}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-red-600/70 dark:text-red-400/70">
               Necessitam atenção imediata
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-blue-200 dark:border-blue-800">
+        <Card className="metric-card metric-card-blue group">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2 text-blue-700 dark:text-blue-300">
-              <Users className="h-4 w-4" />
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-blue-700 dark:text-blue-300">
+              <div className="rounded-full bg-blue-100 dark:bg-blue-900/50 p-1.5">
+                <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
               Técnicos Ativos
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+            <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-1">
               {technicianStats?.length || 0}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-blue-600/70 dark:text-blue-400/70">
               Trabalhando no momento
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-green-200 dark:border-green-800">
+        <Card className="metric-card metric-card-success group">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2 text-green-700 dark:text-green-300">
-              <Activity className="h-4 w-4" />
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-green-700 dark:text-green-300">
+              <div className="rounded-full bg-green-100 dark:bg-green-900/50 p-1.5">
+                <Activity className="h-4 w-4 text-green-600 dark:text-green-400" />
+              </div>
               Atividade
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+            <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-1">
               {recentActivity?.length || 0}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-green-600/70 dark:text-green-400/70">
               Eventos nas últimas 24h
             </p>
           </CardContent>

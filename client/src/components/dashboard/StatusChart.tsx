@@ -45,19 +45,22 @@ export default function StatusChart({ data, isLoading }: StatusChartProps) {
   })).filter(item => item.value > 0) : [];
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>Distribuição por Status</CardTitle>
-          <div className="flex items-center space-x-4 text-sm">
+    <Card className="card-modern-gradient h-fit">
+      <CardHeader className="pb-4">
+        <div className="flex flex-col space-y-4">
+          <CardTitle className="text-lg font-bold">Distribuição por Status</CardTitle>
+          <div className="grid grid-cols-2 gap-2 text-sm">
             {Object.entries(STATUS_LABELS).map(([status, label]) => (
               <div key={status} className="flex items-center space-x-2">
                 <span 
-                  className="status-indicator"
+                  className="status-indicator-modern"
                   style={{ backgroundColor: COLORS[status as keyof typeof COLORS] }}
                 ></span>
-                <span className="text-gray-600">
-                  {label} ({data?.[status as keyof StatusDistribution] || 0})
+                <span className="text-foreground font-medium">
+                  {label}
+                </span>
+                <span className="text-muted-foreground font-bold">
+                  ({data?.[status as keyof StatusDistribution] || 0})
                 </span>
               </div>
             ))}
@@ -65,16 +68,16 @@ export default function StatusChart({ data, isLoading }: StatusChartProps) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="chart-container">
+        <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={chartData}
                 cx="50%"
                 cy="50%"
-                innerRadius={60}
-                outerRadius={120}
-                paddingAngle={2}
+                innerRadius={45}
+                outerRadius={90}
+                paddingAngle={3}
                 dataKey="value"
               >
                 {chartData.map((entry, index) => (
@@ -86,7 +89,12 @@ export default function StatusChart({ data, isLoading }: StatusChartProps) {
               </Pie>
               <Tooltip 
                 formatter={(value: number, name: string) => [value, name]}
-                labelStyle={{ color: '#374151' }}
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                  color: 'hsl(var(--foreground))'
+                }}
               />
             </PieChart>
           </ResponsiveContainer>

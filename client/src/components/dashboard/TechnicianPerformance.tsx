@@ -51,51 +51,72 @@ export default function TechnicianPerformance({ data, isLoading }: TechnicianPer
   };
 
   return (
-    <div className="xl:col-span-2">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Performance por Técnico</CardTitle>
-            <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800">
-              <ExternalLink className="h-4 w-4 mr-1" />
-              Ver relatório completo
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {technicianData.map((technician) => (
-              <div key={technician.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <div className="flex items-center space-x-3">
-                  <img 
-                    src={technician.profileImageUrl || `https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=40&h=40`}
-                    alt={technician.name}
-                    className="h-10 w-10 rounded-full object-cover"
-                  />
-                  <div>
-                    <p className="font-medium text-gray-900">{technician.name}</p>
-                    <p className="text-sm text-gray-600">{technician.completedOS} OS concluídas</p>
+    <Card className="card-modern-gradient h-fit">
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg font-bold">Performance por Técnico</CardTitle>
+          <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80 hover:bg-primary/10">
+            <ExternalLink className="h-4 w-4 mr-1" />
+            Ver relatório completo
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-3 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-1">
+          {technicianData.map((technician, index) => (
+            <div 
+              key={technician.id} 
+              className="team-member-card animate-scale-in"
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="relative">
+                    <img 
+                      src={technician.profileImageUrl || `https://images.unsplash.com/photo-${1500 + technician.id}?ixlib=rb-4.0.3&auto=format&fit=crop&w=50&h=50&q=80`}
+                      alt={technician.name}
+                      className="team-member-avatar"
+                    />
+                    <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-card ${
+                      technician.successRate >= 90 ? 'bg-green-500' : 
+                      technician.successRate >= 80 ? 'bg-yellow-500' : 'bg-red-500'
+                    }`} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-semibold text-foreground truncate">{technician.name}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {technician.completedOS} OS concluídas
+                    </p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <div className="text-right">
-                    <p className={`text-sm font-medium ${getSuccessRateColor(technician.successRate)}`}>
-                      {technician.successRate}%
-                    </p>
-                    <p className="text-xs text-gray-500">Taxa de sucesso</p>
+                <div className="text-right space-y-2">
+                  <div className="flex items-center space-x-3">
+                    <div className="text-right">
+                      <p className={`text-lg font-bold ${getSuccessRateColor(technician.successRate)}`}>
+                        {technician.successRate}%
+                      </p>
+                      <p className="text-xs text-muted-foreground">Taxa de sucesso</p>
+                    </div>
                   </div>
-                  <div className="w-20">
-                    <Progress 
-                      value={technician.successRate} 
-                      className="h-2"
-                    />
+                  <div className="w-24">
+                    <div className="progress-modern">
+                      <div 
+                        className="progress-fill"
+                        style={{ 
+                          width: `${technician.successRate}%`,
+                          background: technician.successRate >= 90 ? 'var(--gradient-success)' :
+                                    technician.successRate >= 80 ? 'var(--gradient-warning)' :
+                                    'var(--gradient-danger)'
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
