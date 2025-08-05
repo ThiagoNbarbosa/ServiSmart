@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, CheckCircle, Plus, MessageCircle, AlertTriangle, Upload } from "lucide-react";
 import type { ActivityItem } from "@shared/schema";
 
 interface RecentActivityProps {
@@ -12,17 +12,17 @@ interface RecentActivityProps {
 const getActivityIcon = (type: string) => {
   switch (type) {
     case 'OS_COMPLETED':
-      return 'h-2 w-2 bg-green-500 rounded-full';
+      return { icon: CheckCircle, className: 'bg-green-500 text-white' };
     case 'OS_CREATED':
-      return 'h-2 w-2 bg-blue-500 rounded-full';
+      return { icon: Plus, className: 'bg-blue-500 text-white' };
     case 'COMMENT_ADDED':
-      return 'h-2 w-2 bg-yellow-500 rounded-full';
+      return { icon: MessageCircle, className: 'bg-yellow-500 text-white' };
     case 'OS_OVERDUE':
-      return 'h-2 w-2 bg-red-500 rounded-full';
+      return { icon: AlertTriangle, className: 'bg-red-500 text-white' };
     case 'IMPORT_COMPLETED':
-      return 'h-2 w-2 bg-purple-500 rounded-full';
+      return { icon: Upload, className: 'bg-purple-500 text-white' };
     default:
-      return 'h-2 w-2 bg-gray-500 rounded-full';
+      return { icon: RefreshCw, className: 'bg-gray-500 text-white' };
   }
 };
 
@@ -77,26 +77,47 @@ export default function RecentActivity({ data, isLoading }: RecentActivityProps)
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="card-modern-gradient h-fit">
+      <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle>Atividade Recente</CardTitle>
-          <Button variant="ghost" size="sm">
+          <CardTitle className="text-lg font-bold">Atividade Recente</CardTitle>
+          <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80 hover:bg-primary/10">
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {activities.map((activity) => (
-            <div key={activity.id} className="flex items-start space-x-3">
-              <div className={`flex-shrink-0 mt-2 ${getActivityIcon(activity.type)}`} />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm text-gray-900">{activity.description}</p>
-                <p className="text-xs text-gray-500">{formatTimeAgo(activity.createdAt)}</p>
+        <div className="activity-timeline space-y-1 max-h-80 overflow-y-auto">
+          {activities.map((activity, index) => {
+            const iconData = getActivityIcon(activity.type);
+            const IconComponent = iconData.icon;
+            
+            return (
+              <div 
+                key={activity.id} 
+                className="activity-item animate-slide-up"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <div className={`activity-icon ${iconData.className}`}>
+                  <IconComponent className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1 space-y-1">
+                  <p className="text-sm font-medium text-foreground leading-tight">
+                    {activity.description}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatTimeAgo(activity.createdAt)}
+                  </p>
+                </div>
               </div>
+            );
+          })}
+          {activities.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              <RefreshCw className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Nenhuma atividade recente</p>
             </div>
-          ))}
+          )}
         </div>
       </CardContent>
     </Card>

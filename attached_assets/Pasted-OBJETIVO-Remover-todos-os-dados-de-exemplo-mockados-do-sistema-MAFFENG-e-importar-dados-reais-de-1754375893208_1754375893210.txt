@@ -1,0 +1,50 @@
+OBJETIVO:
+Remover todos os dados de exemplo (mockados) do sistema MAFFENG e importar dados reais de Ordens de Serviço contidos na planilha `PREVENTIVAS.xlsx`, garantindo que o sistema funcione com base em dados reais e estruturados.
+
+TAREFAS:
+
+1. LIMPAR DADOS MOCKADOS DO SISTEMA
+- Apagar ou desativar todos os registros fictícios utilizados para testes, como:
+  - Ordens de serviço genéricas ou aleatórias
+  - Técnicos e clientes de exemplo
+  - Taxas de conclusão forjadas ou zeradas
+  - Logs ou atividades simuladas
+- Garantir que, ao remover os dados mock, a estrutura dos componentes permaneça intacta e funcional.
+- Resetar dashboards e contadores para 0 ou estado vazio, até que os dados reais sejam carregados.
+
+2. IMPORTAR DADOS REAIS DA PLANILHA
+- Utilizar a planilha `PREVENTIVAS.xlsx` enviada pelo usuário para extrair os dados reais de OS.
+- Converter os dados da planilha para o formato de estrutura usado pelo sistema (array de objetos).
+- Os campos principais esperados de cada OS são:
+  - Número da OS
+  - Data ou Período
+  - Localidade ou Agência
+  - Status (Pendente, Concluído, Em andamento, etc.)
+  - Técnico responsável
+  - Descrição ou observações
+- Validar e normalizar os dados (ex: nomes, datas, status padronizados).
+
+3. POPULAR O SISTEMA COM OS DADOS REAIS
+- Carregar as OS extraídas da planilha no sistema.
+- Preencher os dashboards automaticamente com base nesses dados reais:
+  - Total de OS
+  - OS por status
+  - OS por técnico
+  - Tendência mensal
+  - Lista de atividades recentes
+- Verificar se os gráficos, cards e listas estão sendo atualizados corretamente com os dados reais.
+
+4. GARANTIR FUNCIONALIDADE COMPLETA COM DADOS REAIS
+- Certificar que as funcionalidades existentes como filtros, pesquisa, visualização e métricas estejam funcionando normalmente com os novos dados reais.
+- Testar o sistema visualmente e funcionalmente após a importação.
+
+IMPORTANTE:
+- Não alterar a lógica de funcionamento do app.
+- Manter a estrutura original do código.
+- Preservar qualquer autenticação ou permissões existentes.
+- A importação deve respeitar os formatos de campos usados atualmente no sistema (ex: campos esperados pelo front).
+
+FINALIZAÇÃO:
+- O dashboard deve refletir fielmente os dados da planilha real.
+- Os dados mockados devem ter sido completamente substituídos.
+- Nenhum erro deve aparecer durante o uso com os dados reais carregados.
