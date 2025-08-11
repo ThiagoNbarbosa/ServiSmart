@@ -302,20 +302,6 @@
     grid-template-columns: 1fr;
   }
 
-  /* Chart wrapper for consistent height */
-  .chart-wrap {
-    @apply relative w-full;
-  }
-
-  .chart-wrap > * {
-    @apply w-full h-full;
-  }
-
-  /* Ensure cards don't overlap */
-  .dashboard-card {
-    @apply relative z-0 overflow-hidden;
-  }
-
   @media (min-width: 768px) {
     .dashboard-grid-2 {
       grid-template-columns: repeat(2, 1fr);
