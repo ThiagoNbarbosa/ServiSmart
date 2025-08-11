@@ -78,7 +78,7 @@ export default function Dashboard() {
   });
 
   return (
-    <div className={`space-y-8 ${tvMode ? 'tv-mode' : ''}`}>
+    <div className={`relative isolate space-y-8 ${tvMode ? 'tv-mode' : ''}`}>
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
@@ -187,9 +187,9 @@ export default function Dashboard() {
         </div>
 
         {/* Enhanced Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-7 gap-6 mb-8">
-          <div className="lg:col-span-3">
-            <Card className="h-[400px]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 auto-rows-auto mb-4 md:mb-6">
+          <div className="lg:col-span-6">
+            <Card className="relative overflow-hidden">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <div className="rounded-full bg-blue-100 dark:bg-blue-900/50 p-1.5">
@@ -198,13 +198,15 @@ export default function Dashboard() {
                   Distribuição por Status
                 </CardTitle>
               </CardHeader>
-              <CardContent className="h-[300px]">
-                <StatusChart data={statusDistribution} isLoading={statusLoading} />
+              <CardContent>
+                <div className="chart-wrap h-[280px] md:h-[300px]">
+                  <StatusChart data={statusDistribution} isLoading={statusLoading} />
+                </div>
               </CardContent>
             </Card>
           </div>
-          <div className="lg:col-span-4">
-            <Card className="h-[400px]">
+          <div className="lg:col-span-6">
+            <Card className="relative overflow-hidden">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <div className="rounded-full bg-green-100 dark:bg-green-900/50 p-1.5">
@@ -213,17 +215,19 @@ export default function Dashboard() {
                   Tendência Mensal
                 </CardTitle>
               </CardHeader>
-              <CardContent className="h-[300px]">
-                <TrendChart data={monthlyTrends} isLoading={trendsLoading} />
+              <CardContent>
+                <div className="chart-wrap h-[280px] md:h-[300px]">
+                  <TrendChart data={monthlyTrends} isLoading={trendsLoading} />
+                </div>
               </CardContent>
             </Card>
           </div>
         </div>
 
         {/* Performance and Activity */}
-        <div className="grid grid-cols-1 lg:grid-cols-7 gap-6 mb-8">
-          <div className="lg:col-span-4">
-            <Card className="h-[400px]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 auto-rows-auto gap-y-6">
+          <div className="lg:col-span-7">
+            <Card className="relative overflow-hidden">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <div className="rounded-full bg-purple-100 dark:bg-purple-900/50 p-1.5">
@@ -232,13 +236,15 @@ export default function Dashboard() {
                   Performance por Técnico
                 </CardTitle>
               </CardHeader>
-              <CardContent className="h-[300px] overflow-y-auto">
-                <TechnicianPerformance data={technicianStats} isLoading={techLoading} />
+              <CardContent>
+                <div className="chart-wrap h-[280px] md:h-[300px] overflow-y-auto">
+                  <TechnicianPerformance data={technicianStats} isLoading={techLoading} />
+                </div>
               </CardContent>
             </Card>
           </div>
-          <div className="lg:col-span-3">
-            <Card className="h-[400px]">
+          <div className="lg:col-span-5">
+            <Card className="relative overflow-hidden">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <div className="rounded-full bg-orange-100 dark:bg-orange-900/50 p-1.5">
@@ -247,16 +253,18 @@ export default function Dashboard() {
                   Atividade Recente
                 </CardTitle>
               </CardHeader>
-              <CardContent className="h-[300px] overflow-y-auto">
-                <RecentActivity data={recentActivity} isLoading={activityLoading} />
+              <CardContent>
+                <div className="chart-wrap h-[280px] md:h-[300px] overflow-y-auto">
+                  <RecentActivity data={recentActivity} isLoading={activityLoading} />
+                </div>
               </CardContent>
             </Card>
           </div>
         </div>
 
         {/* Enhanced Alert Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card className="metric-card metric-card-danger group">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 auto-rows-auto">
+        <Card className="relative overflow-hidden metric-card metric-card-danger group">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold flex items-center gap-2 text-red-700 dark:text-red-300">
               <div className="rounded-full bg-red-100 dark:bg-red-900/50 p-1.5">
@@ -294,7 +302,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="metric-card metric-card-success group">
+        <Card className="relative overflow-hidden metric-card metric-card-success group">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold flex items-center gap-2 text-green-700 dark:text-green-300">
               <div className="rounded-full bg-green-100 dark:bg-green-900/50 p-1.5">
