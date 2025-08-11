@@ -262,6 +262,15 @@ export const insertTeamMemberSchema = createInsertSchema(users).omit({
   userLevel: z.enum(["DEV", "CONTRACT_MANAGER", "REPORT_ELABORATOR", "SUPERVISOR", "ADMIN", "TECHNICIAN"]).default("TECHNICIAN")
 });
 
+// Login Data Schema
+export const loginSchema = z.object({
+  email: z.string().email("Email inválido"),
+  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+  accessLevel: z.enum(["DIRETOR", "SUPERVISOR", "USUARIO"]).default("USUARIO")
+});
+
+export type LoginData = z.infer<typeof loginSchema>;
+
 // Types
 // Contract Managers table (specialized user roles)
 export const contractManagers = pgTable("contract_managers", {
