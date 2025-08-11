@@ -856,6 +856,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Auxiliares CRUD routes
+  app.get('/api/auxiliares', devAuthMiddleware, async (req: any, res) => {
+    try {
+      const auxiliares = await storage.getAuxiliares();
+      res.json(auxiliares);
+    } catch (error) {
+      console.error("Error fetching auxiliares:", error);
+      res.status(500).json({ message: "Falha ao buscar auxiliares" });
+    }
+  });
+
+  app.get('/api/auxiliares/:id', devAuthMiddleware, async (req: any, res) => {
+    try {
+      const auxiliar = await storage.getAuxiliar(parseInt(req.params.id));
+      if (!auxiliar) {
+        return res.status(404).json({ message: "Auxiliar não encontrado" });
+      }
+      res.json(auxiliar);
+    } catch (error) {
+      console.error("Error fetching auxiliar:", error);
+      res.status(500).json({ message: "Falha ao buscar auxiliar" });
+    }
+  });
+
+  app.post("/api/auxiliares", devAuthMiddleware, async (req, res) => {
+    try {
+      const auxiliar = await storage.createAuxiliar(req.body);
+      res.status(201).json(auxiliar);
+    } catch (error) {
+      console.error("Error creating auxiliar:", error);
+      res.status(500).json({ message: "Falha ao criar auxiliar" });
+    }
+  });
+
+  app.put("/api/auxiliares/:id", devAuthMiddleware, async (req, res) => {
+    try {
+      const auxiliar = await storage.updateAuxiliar(parseInt(req.params.id), req.body);
+      res.json(auxiliar);
+    } catch (error) {
+      console.error("Error updating auxiliar:", error);
+      res.status(500).json({ message: "Falha ao atualizar auxiliar" });
+    }
+  });
+
+  app.delete("/api/auxiliares/:id", devAuthMiddleware, async (req, res) => {
+    try {
+      await storage.deleteAuxiliar(parseInt(req.params.id));
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting auxiliar:", error);
+      res.status(500).json({ message: "Falha ao deletar auxiliar" });
+    }
+  });
+
   // Contract CRUD routes
   app.post("/api/contracts", devAuthMiddleware, async (req, res) => {
     try {

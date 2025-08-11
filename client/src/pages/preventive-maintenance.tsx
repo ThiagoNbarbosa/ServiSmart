@@ -91,6 +91,10 @@ export default function PreventiveMaintenance() {
     queryKey: ['/api/technicians'],
   });
 
+  const { data: auxiliares = [] } = useQuery({
+    queryKey: ['/api/auxiliares'],
+  });
+
   const createMutation = useMutation({
     mutationFn: async (data: Partial<MaintenancePlan>) => {
       return await apiRequest('/api/maintenance-plans', 'POST', data);
@@ -361,20 +365,35 @@ export default function PreventiveMaintenance() {
         </div>
 
         <div>
-          <Label htmlFor="technicianId">Técnico Responsável</Label>
+          <Label htmlFor="technicianId">Responsável</Label>
           <Select
             value={formData.technicianId?.toString() || ''}
             onValueChange={(value) => setFormData({ ...formData, technicianId: parseInt(value) })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Selecione um técnico" />
+              <SelectValue placeholder="Selecione um responsável" />
             </SelectTrigger>
             <SelectContent>
-              {technicians.map((tech: any) => (
-                <SelectItem key={tech.id} value={tech.id.toString()}>
-                  {tech.name}
-                </SelectItem>
-              ))}
+              {technicians.length > 0 && (
+                <>
+                  <div className="px-2 py-1.5 text-sm font-medium text-gray-500">Técnicos</div>
+                  {technicians.map((tech: any) => (
+                    <SelectItem key={`tech-${tech.id}`} value={tech.id.toString()}>
+                      {tech.name} (Técnico)
+                    </SelectItem>
+                  ))}
+                </>
+              )}
+              {auxiliares.length > 0 && (
+                <>
+                  <div className="px-2 py-1.5 text-sm font-medium text-gray-500">Auxiliares</div>
+                  {auxiliares.map((aux: any) => (
+                    <SelectItem key={`aux-${aux.id}`} value={aux.id.toString()}>
+                      {aux.name} (Auxiliar)
+                    </SelectItem>
+                  ))}
+                </>
+              )}
             </SelectContent>
           </Select>
         </div>

@@ -39,6 +39,24 @@ Intelligent Work Order Management Dashboard designed for engineering teams, feat
 
 ## Recent Changes (Janeiro 2025)
 
+### 🧰 Auxiliares Implementation (Janeiro 11, 2025)
+**OBJETIVO CONCLUÍDO**: Implementação completa do sistema de auxiliares no CMMS MAFFENG, integrando auxiliares com todas as funcionalidades existentes.
+
+#### ✅ Implementações Realizadas:
+- ✅ Criada tabela `auxiliares` no schema da database com campos: id, userId, name, email, phone, active, createdAt
+- ✅ Implementadas operações CRUD completas para auxiliares no storage layer (getAuxiliares, createAuxiliar, updateAuxiliar, deleteAuxiliar)
+- ✅ Criadas rotas API REST para gerenciamento de auxiliares: GET, POST, PUT, DELETE `/api/auxiliares`
+- ✅ Atualizada interface de gestão com nova aba "Auxiliares" incluindo tabela com ações (editar, deletar)
+- ✅ Modificada página de manutenção preventiva para incluir auxiliares na seleção de responsáveis
+- ✅ Atualizado layout de cards resumo no management para exibir contador de auxiliares
+- ✅ Sistema de mutations com notificações toast para operações de auxiliares
+
+#### 🎯 Funcionalidades Implementadas:
+- **Gestão de Auxiliares**: CRUD completo com interface responsiva
+- **Integração com Manutenção Preventiva**: Auxiliares podem ser atribuídos como responsáveis
+- **Sistema de Status**: Controle de status ativo/inativo para auxiliares
+- **Interface Unificada**: Auxiliares integrados ao sistema de gestão existente
+
 ### 🗑️ Module Removal - Inventory & Assets (Janeiro 11, 2025)
 **OBJETIVO CONCLUÍDO**: Remoção completa dos módulos de Inventário e Ativos conforme solicitado pelo usuário.
 
