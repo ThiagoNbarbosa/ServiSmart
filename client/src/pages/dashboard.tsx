@@ -78,33 +78,33 @@ export default function Dashboard() {
   });
 
   return (
-    <div className={`space-y-6 ${tvMode ? 'tv-mode' : ''}`}>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Visão geral do sistema de ordens de serviço
-          </p>
+    <div className={`space-y-8 ${tvMode ? 'tv-mode' : ''}`}>
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Visão geral do sistema de ordens de serviço
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setTvMode(!tvMode)}
+            >
+              <LayoutDashboard className="h-4 w-4 mr-2" />
+              {tvMode ? 'Modo Normal' : 'Modo TV'}
+            </Button>
+            <Button size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Nova OS
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setTvMode(!tvMode)}
-          >
-            <LayoutDashboard className="h-4 w-4 mr-2" />
-            {tvMode ? 'Modo Normal' : 'Modo TV'}
-          </Button>
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Nova OS
-          </Button>
-        </div>
-      </div>
 
-      {/* Enhanced KPI Cards */}
-      <div className="responsive-cols-4 animate-fade-in">
+        {/* Enhanced KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <Card className="metric-card metric-card-blue">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-sm font-semibold text-blue-700 dark:text-blue-300">
@@ -184,34 +184,78 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
-      </div>
+        </div>
 
-      {/* Enhanced Charts Section */}
-      <div className="grid gap-6 lg:grid-cols-7 animate-slide-up">
-        <div className="lg:col-span-3">
-          <div className="chart-container-modern">
-            <StatusChart data={statusDistribution} isLoading={statusLoading} />
+        {/* Enhanced Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-7 gap-6 mb-8">
+          <div className="lg:col-span-3">
+            <Card className="h-[400px]">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <div className="rounded-full bg-blue-100 dark:bg-blue-900/50 p-1.5">
+                    <ClipboardList className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  Distribuição por Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="h-[300px]">
+                <StatusChart data={statusDistribution} isLoading={statusLoading} />
+              </CardContent>
+            </Card>
+          </div>
+          <div className="lg:col-span-4">
+            <Card className="h-[400px]">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <div className="rounded-full bg-green-100 dark:bg-green-900/50 p-1.5">
+                    <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  </div>
+                  Tendência Mensal
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="h-[300px]">
+                <TrendChart data={monthlyTrends} isLoading={trendsLoading} />
+              </CardContent>
+            </Card>
           </div>
         </div>
-        <div className="lg:col-span-4">
-          <div className="chart-container-modern">
-            <TrendChart data={monthlyTrends} isLoading={trendsLoading} />
+
+        {/* Performance and Activity */}
+        <div className="grid grid-cols-1 lg:grid-cols-7 gap-6 mb-8">
+          <div className="lg:col-span-4">
+            <Card className="h-[400px]">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <div className="rounded-full bg-purple-100 dark:bg-purple-900/50 p-1.5">
+                    <Users className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  Performance por Técnico
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="h-[300px] overflow-y-auto">
+                <TechnicianPerformance data={technicianStats} isLoading={techLoading} />
+              </CardContent>
+            </Card>
+          </div>
+          <div className="lg:col-span-3">
+            <Card className="h-[400px]">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <div className="rounded-full bg-orange-100 dark:bg-orange-900/50 p-1.5">
+                    <Activity className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  Atividade Recente
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="h-[300px] overflow-y-auto">
+                <RecentActivity data={recentActivity} isLoading={activityLoading} />
+              </CardContent>
+            </Card>
           </div>
         </div>
-      </div>
 
-      {/* Performance and Activity */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        <div className="lg:col-span-4">
-          <TechnicianPerformance data={technicianStats} isLoading={techLoading} />
-        </div>
-        <div className="lg:col-span-3">
-          <RecentActivity data={recentActivity} isLoading={activityLoading} />
-        </div>
-      </div>
-
-      {/* Enhanced Alert Cards */}
-      <div className="responsive-grid animate-scale-in">
+        {/* Enhanced Alert Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card className="metric-card metric-card-danger group">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold flex items-center gap-2 text-red-700 dark:text-red-300">
@@ -268,7 +312,7 @@ export default function Dashboard() {
             </p>
           </CardContent>
         </Card>
-      </div>
+        </div>
     </div>
   );
 }

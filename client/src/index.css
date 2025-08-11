@@ -291,6 +291,31 @@
     @apply grid gap-4 md:gap-6 lg:gap-8;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   }
+
+  /* Fix overlapping content issues */
+  .dashboard-content {
+    @apply w-full max-w-full overflow-x-hidden;
+  }
+
+  .dashboard-grid {
+    @apply grid gap-6;
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 768px) {
+    .dashboard-grid-2 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .dashboard-grid-4 {
+      grid-template-columns: repeat(4, 1fr);
+    }
+    .dashboard-grid-7 {
+      grid-template-columns: repeat(7, 1fr);
+    }
+  }
 }
 
 @media (min-width: 1920px) {
