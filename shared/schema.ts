@@ -34,7 +34,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  userLevel: varchar("user_level").notNull().default("TECHNICIAN"), // DEV, CONTRACT_MANAGER, REPORT_ELABORATOR, SUPERVISOR, ADMIN, TECHNICIAN
+  userLevel: varchar("user_level").notNull().default("TECHNICIAN"), // DEV, CONTRACT_MANAGER, REPORT_ELABORATOR, SUPERVISOR, ADMIN, TECHNICIAN, AUXILIAR
   position: varchar("position"), // Job title/position
   location: varchar("location"), // Work location
   department: varchar("department"), // Department/team
@@ -49,6 +49,17 @@ export const users = pgTable("users", {
 
 // Technicians table
 export const technicians = pgTable("technicians", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id),
+  name: varchar("name").notNull(),
+  email: varchar("email"),
+  phone: varchar("phone"),
+  active: boolean("active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Auxiliares table
+export const auxiliares = pgTable("auxiliares", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").references(() => users.id),
   name: varchar("name").notNull(),
@@ -79,6 +90,7 @@ export const workOrders = pgTable("work_orders", {
   location: varchar("location"),
   contractId: integer("contract_id").references(() => contracts.id),
   technicianId: integer("technician_id").references(() => technicians.id),
+  auxiliarId: integer("auxiliar_id").references(() => auxiliares.id), // Assigned auxiliar
   reportElaboratorId: varchar("report_elaborator_id").references(() => users.id), // Assigned report elaborator
   supervisorId: varchar("supervisor_id").references(() => users.id), // Assigned supervisor
   contractManagerId: varchar("contract_manager_id").references(() => users.id), // Assigned contract manager
@@ -504,3 +516,8 @@ export type MonthlyTrend = {
   completed: number;
   created: number;
 };
+
+// Insert schema and types for auxiliares
+export const insertAuxiliarSchema = createInsertSchema(auxiliares).omit({ id: true, createdAt: true });
+export type Auxiliar = typeof auxiliares.$inferSelect;
+export type InsertAuxiliar = z.infer<typeof insertAuxiliarSchema>;

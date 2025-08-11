@@ -13,6 +13,7 @@ import {
   inventoryItems,
   inventoryTransactions,
   systemConfig,
+  auxiliares,
   type User,
   type UpsertUser,
   type InsertTechnician,
@@ -45,6 +46,8 @@ import {
   type InsertInventoryTransaction,
   type SystemConfig,
   type InsertSystemConfig,
+  type Auxiliar,
+  type InsertAuxiliar,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, lte, sql, count, avg, sum } from "drizzle-orm";
@@ -59,6 +62,12 @@ export interface IStorage {
   getTechnician(id: number): Promise<Technician | undefined>;
   createTechnician(technician: InsertTechnician): Promise<Technician>;
   updateTechnician(id: number, technician: Partial<InsertTechnician>): Promise<Technician>;
+
+  // Auxiliar operations
+  getAuxiliares(): Promise<Auxiliar[]>;
+  getAuxiliar(id: number): Promise<Auxiliar | undefined>;
+  createAuxiliar(auxiliar: InsertAuxiliar): Promise<Auxiliar>;
+  updateAuxiliar(id: number, auxiliar: Partial<InsertAuxiliar>): Promise<Auxiliar>;
 
   // Contract operations
   getContracts(): Promise<Contract[]>;
@@ -909,6 +918,34 @@ export class DatabaseStorage implements IStorage {
     await db.update(technicians).set({ active: false }).where(eq(technicians.id, id));
   }
 
+  // Auxiliar operations
+  async getAuxiliares(): Promise<Auxiliar[]> {
+    return await db.select().from(auxiliares).where(eq(auxiliares.active, true)).orderBy(auxiliares.name);
+  }
+
+  async getAuxiliar(id: number): Promise<Auxiliar | undefined> {
+    const [auxiliar] = await db.select().from(auxiliares).where(and(eq(auxiliares.id, id), eq(auxiliares.active, true)));
+    return auxiliar;
+  }
+
+  async createAuxiliar(auxiliarData: InsertAuxiliar): Promise<Auxiliar> {
+    const [newAuxiliar] = await db.insert(auxiliares).values(auxiliarData).returning();
+    return newAuxiliar;
+  }
+
+  async updateAuxiliar(id: number, auxiliarData: Partial<InsertAuxiliar>): Promise<Auxiliar> {
+    const [updatedAuxiliar] = await db
+      .update(auxiliares)
+      .set(auxiliarData)
+      .where(eq(auxiliares.id, id))
+      .returning();
+    return updatedAuxiliar;
+  }
+
+  async deleteAuxiliar(id: number): Promise<void> {
+    await db.update(auxiliares).set({ active: false }).where(eq(auxiliares.id, id));
+  }
+
   // Additional contract operations
   async deleteContract(id: number): Promise<void> {
     await db.update(contracts).set({ active: false }).where(eq(contracts.id, id));
@@ -971,6 +1008,9 @@ export class DatabaseStorage implements IStorage {
 
       await db.delete(technicians);
       clearedTables.push('Técnicos');
+
+      await db.delete(auxiliares);
+      clearedTables.push('Auxiliares');
 
       // Clear system configurations except essential ones
       await db.delete(systemConfig).where(sql`category != 'ESSENTIAL'`);

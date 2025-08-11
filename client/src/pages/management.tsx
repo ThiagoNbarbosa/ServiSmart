@@ -52,6 +52,10 @@ export default function Management() {
     queryKey: ['/api/technicians'],
   });
 
+  const { data: auxiliares } = useQuery<Technician[]>({
+    queryKey: ['/api/auxiliares'],
+  });
+
   const { data: contracts } = useQuery<Contract[]>({
     queryKey: ['/api/contracts'],
   });
@@ -76,6 +80,26 @@ export default function Management() {
       toast({
         title: "Erro",
         description: "Erro ao remover técnico.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteAuxiliarMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest(`/api/auxiliares/${id}`, { method: 'DELETE' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/auxiliares'] });
+      toast({
+        title: "Sucesso",
+        description: "Auxiliar removido com sucesso.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Erro ao remover auxiliar.",
         variant: "destructive",
       });
     },
@@ -175,12 +199,19 @@ export default function Management() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <Card>
             <CardContent className="p-4 text-center">
               <Users className="h-8 w-8 mx-auto text-blue-600 mb-2" />
               <div className="text-2xl font-bold">{technicians?.length || 0}</div>
               <div className="text-sm text-gray-500">Técnicos</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 text-center">
+              <Users className="h-8 w-8 mx-auto text-indigo-600 mb-2" />
+              <div className="text-2xl font-bold">{auxiliares?.length || 0}</div>
+              <div className="text-sm text-gray-500">Auxiliares</div>
             </CardContent>
           </Card>
           <Card>
@@ -210,10 +241,14 @@ export default function Management() {
 
         {/* Management Tabs */}
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="technicians" className="flex items-center space-x-2">
               <Users className="h-4 w-4" />
               <span>Técnicos</span>
+            </TabsTrigger>
+            <TabsTrigger value="auxiliares" className="flex items-center space-x-2">
+              <Users className="h-4 w-4" />
+              <span>Auxiliares</span>
             </TabsTrigger>
             <TabsTrigger value="contracts" className="flex items-center space-x-2">
               <Building2 className="h-4 w-4" />
@@ -270,6 +305,65 @@ export default function Management() {
                                 size="sm"
                                 onClick={() => deleteTechnicianMutation.mutate(technician.id)}
                                 disabled={deleteTechnicianMutation.isPending}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Auxiliares Tab */}
+          <TabsContent value="auxiliares">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Gestão de Auxiliares</CardTitle>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Novo Auxiliar
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Telefone</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {auxiliares?.map((auxiliar) => (
+                        <TableRow key={auxiliar.id}>
+                          <TableCell className="font-medium">{auxiliar.name}</TableCell>
+                          <TableCell>{auxiliar.email}</TableCell>
+                          <TableCell>{auxiliar.phone}</TableCell>
+                          <TableCell>
+                            <Badge className={getStatusColor(auxiliar.active ? 'ativo' : 'inativo')}>
+                              {auxiliar.active ? 'Ativo' : 'Inativo'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex space-x-2">
+                              <Button variant="outline" size="sm">
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => deleteAuxiliarMutation.mutate(auxiliar.id)}
+                                disabled={deleteAuxiliarMutation.isPending}
                               >
                                 <Trash2 className="h-3 w-3" />
                               </Button>
