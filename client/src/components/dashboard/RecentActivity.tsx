@@ -86,8 +86,8 @@ export default function RecentActivity({ data, isLoading }: RecentActivityProps)
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="activity-timeline space-y-1 max-h-80 overflow-y-auto">
+      <CardContent className="flex-1">
+        <div className="activity-timeline space-y-1 h-full overflow-y-auto">
           {activities.map((activity, index) => {
             const iconData = getActivityIcon(activity.type);
             const IconComponent = iconData.icon;

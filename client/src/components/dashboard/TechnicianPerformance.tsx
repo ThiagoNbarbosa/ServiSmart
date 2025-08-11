@@ -61,8 +61,8 @@ export default function TechnicianPerformance({ data, isLoading }: TechnicianPer
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="grid gap-3 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-1">
+      <CardContent className="flex-1 overflow-y-auto">
+        <div className="grid gap-3 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-1 h-full">
           {technicianData.map((technician, index) => (
             <div 
               key={technician.id} 
