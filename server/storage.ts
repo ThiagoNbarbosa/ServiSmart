@@ -148,6 +148,9 @@ export interface IStorage {
 
   // Report Elaborators operations
   getReportElaborators(): Promise<any[]>;
+
+  // System Data Reset operation
+  clearAllData(): Promise<{ success: boolean; message: string; cleared: string[] }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -925,6 +928,67 @@ export class DatabaseStorage implements IStorage {
       eq(users.isActive, true),
       sql`${users.userLevel} IN ('ENGINEER', 'SUPERVISOR', 'ADMIN')`
     ));
+  }
+
+  // System Data Reset operation
+  async clearAllData(): Promise<{ success: boolean; message: string; cleared: string[] }> {
+    try {
+      const clearedTables: string[] = [];
+
+      // Clear all data tables but preserve user accounts for auth
+      await db.delete(inventoryTransactions);
+      clearedTables.push('Transações de Inventário');
+
+      await db.delete(inventoryItems);
+      clearedTables.push('Itens de Inventário');
+
+      await db.delete(maintenancePlans);
+      clearedTables.push('Planos de Manutenção');
+
+      await db.delete(assets);
+      clearedTables.push('Ativos');
+
+      await db.delete(teamTasks);
+      clearedTables.push('Tarefas da Equipe');
+
+      await db.delete(dashboardFilters);
+      clearedTables.push('Filtros do Dashboard');
+
+      await db.delete(notifications);
+      clearedTables.push('Notificações');
+
+      await db.delete(chatMessages);
+      clearedTables.push('Mensagens de Chat');
+
+      await db.delete(workOrderChecklist);
+      clearedTables.push('Checklist de OS');
+
+      await db.delete(workOrders);
+      clearedTables.push('Ordens de Serviço');
+
+      await db.delete(contracts);
+      clearedTables.push('Contratos');
+
+      await db.delete(technicians);
+      clearedTables.push('Técnicos');
+
+      // Clear system configurations except essential ones
+      await db.delete(systemConfig).where(sql`category != 'ESSENTIAL'`);
+      clearedTables.push('Configurações do Sistema (não essenciais)');
+
+      return {
+        success: true,
+        message: `Dados do sistema foram zerados com sucesso! ${clearedTables.length} tabelas limpas.`,
+        cleared: clearedTables
+      };
+    } catch (error) {
+      console.error('Erro ao zerar dados do sistema:', error);
+      return {
+        success: false,
+        message: 'Erro ao zerar dados do sistema. Verifique os logs para mais detalhes.',
+        cleared: []
+      };
+    }
   }
 }
 

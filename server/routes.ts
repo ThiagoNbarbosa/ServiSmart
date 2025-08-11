@@ -1125,6 +1125,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // System Data Reset route - CRITICAL: Only for development/authorized users
+  app.post("/api/system/clear-data", devAuthMiddleware, async (req, res) => {
+    try {
+      // Extra security check for development environment
+      if (process.env.NODE_ENV !== 'development') {
+        return res.status(403).json({ 
+          message: "Operação não permitida em ambiente de produção" 
+        });
+      }
+
+      // Require confirmation parameter
+      if (!req.body.confirm || req.body.confirm !== 'CLEAR_ALL_DATA') {
+        return res.status(400).json({ 
+          message: "Confirmação necessária. Envie 'confirm: CLEAR_ALL_DATA' para confirmar a operação." 
+        });
+      }
+
+      const result = await storage.clearAllData();
+      
+      if (result.success) {
+        res.json({
+          message: result.message,
+          cleared: result.cleared,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        res.status(500).json({
+          message: result.message,
+          error: "Falha na operação de limpeza"
+        });
+      }
+    } catch (error) {
+      console.error("Error clearing system data:", error);
+      res.status(500).json({ 
+        message: "Erro interno ao zerar dados do sistema", 
+        error: error instanceof Error ? error.message : 'Erro desconhecido' 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // WebSocket setup
