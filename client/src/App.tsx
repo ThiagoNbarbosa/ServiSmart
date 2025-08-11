@@ -19,9 +19,7 @@ import Reports from "@/pages/reports";
 import HelpSupport from "@/pages/help-support";
 import Landing from "@/pages/landing";
 import NotFound from "@/pages/not-found";
-import Assets from "@/pages/assets";
 import PreventiveMaintenance from "@/pages/preventive-maintenance";
-import Inventory from "@/pages/inventory";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -41,9 +39,7 @@ function Router() {
             <Route path="/team" component={TeamInformation} />
             <Route path="/users" component={UserManagement} />
             <Route path="/work-orders" component={SimpleWorkOrders} />
-            <Route path="/assets" component={Assets} />
             <Route path="/preventive-maintenance" component={PreventiveMaintenance} />
-            <Route path="/inventory" component={Inventory} />
             <Route path="/profile" component={UserProfile} />
             <Route path="/management" component={Management} />
             <Route path="/system-config" component={SystemConfig} />

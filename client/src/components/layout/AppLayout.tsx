@@ -26,9 +26,7 @@ import {
   Moon,
   Sun,
   Search,
-  Wrench,
-  Calendar,
-  Package
+  Calendar
 } from "lucide-react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -54,19 +52,9 @@ const navigationItems: NavigationItem[] = [
     icon: ClipboardList,
   },
   {
-    href: "/assets",
-    label: "Ativos",
-    icon: Wrench,
-  },
-  {
     href: "/preventive-maintenance",
     label: "Manutenção Preventiva",
     icon: Calendar,
-  },
-  {
-    href: "/inventory",
-    label: "Inventário",
-    icon: Package,
   },
   {
     href: "/team",

@@ -39,6 +39,24 @@ Intelligent Work Order Management Dashboard designed for engineering teams, feat
 
 ## Recent Changes (Janeiro 2025)
 
+### 🗑️ Module Removal - Inventory & Assets (Janeiro 11, 2025)
+**OBJETIVO CONCLUÍDO**: Remoção completa dos módulos de Inventário e Ativos conforme solicitado pelo usuário.
+
+#### ✅ Implementações Realizadas:
+- ✅ Removidos itens de navegação "Ativos" e "Inventário" do AppLayout
+- ✅ Removidas rotas `/assets` e `/inventory` do App.tsx
+- ✅ Removidos arquivos de páginas: `assets.tsx` e `inventory.tsx`
+- ✅ Limpados imports não utilizados (Wrench, Package icons)
+- ✅ Mantida funcionalidade de limpeza de dados do sistema incluindo tabelas de inventário e ativos
+
+#### 📊 Navegação Atual:
+- **Dashboard**: Visão geral do sistema
+- **Ordens de Serviço**: Gestão de trabalhos e manutenção
+- **Manutenção Preventiva**: Planos e agendamentos
+- **Equipe**: Informações da equipe
+- **Relatórios**: Análises e métricas
+- **Gestão**: Configurações administrativas
+
 ### 🚀 CMMS Core Functionality Implementation (Janeiro 5, 2025)
 **OBJETIVO CONCLUÍDO**: Implementação completa das funcionalidades essenciais de CMMS (Computerized Maintenance Management System) para o MAFFENG.
 
