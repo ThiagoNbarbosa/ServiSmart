@@ -216,6 +216,34 @@
            hover:shadow-xl transition-all duration-300;
     height: 350px;
   }
+
+  /* Chart component specific styles */
+  .recharts-wrapper {
+    @apply w-full h-full;
+  }
+
+  .recharts-surface {
+    @apply w-full h-full;
+  }
+
+  /* Ensure chart components fill container */
+  .dashboard-chart-container {
+    @apply w-full h-full min-h-0;
+  }
+
+  .dashboard-chart-container > div {
+    @apply w-full h-full;
+  }
+
+  /* Status chart specific */
+  .status-chart-container {
+    @apply flex flex-col items-center justify-center w-full h-full;
+  }
+
+  /* Trend chart specific */
+  .trend-chart-container {
+    @apply w-full h-full flex flex-col;
+  }
   
   /* Smooth Animations */
   .animate-slide-up {

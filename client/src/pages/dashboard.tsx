@@ -189,8 +189,8 @@ export default function Dashboard() {
         {/* Enhanced Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-7 gap-6 mb-8">
           <div className="lg:col-span-3">
-            <Card className="h-[480px]">
-              <CardHeader className="pb-4">
+            <Card className="h-[480px] flex flex-col">
+              <CardHeader className="pb-3 flex-shrink-0">
                 <CardTitle className="flex items-center gap-2">
                   <div className="rounded-full bg-blue-100 dark:bg-blue-900/50 p-1.5">
                     <ClipboardList className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -198,14 +198,16 @@ export default function Dashboard() {
                   Distribuição por Status
                 </CardTitle>
               </CardHeader>
-              <CardContent className="h-[400px] flex items-center justify-center">
-                <StatusChart data={statusDistribution} isLoading={statusLoading} />
+              <CardContent className="flex-1 p-6 pt-0">
+                <div className="w-full h-full">
+                  <StatusChart data={statusDistribution} isLoading={statusLoading} />
+                </div>
               </CardContent>
             </Card>
           </div>
           <div className="lg:col-span-4">
-            <Card className="h-[480px]">
-              <CardHeader className="pb-4">
+            <Card className="h-[480px] flex flex-col">
+              <CardHeader className="pb-3 flex-shrink-0">
                 <CardTitle className="flex items-center gap-2">
                   <div className="rounded-full bg-green-100 dark:bg-green-900/50 p-1.5">
                     <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
@@ -213,8 +215,10 @@ export default function Dashboard() {
                   Tendência Mensal
                 </CardTitle>
               </CardHeader>
-              <CardContent className="h-[400px] flex items-center justify-center">
-                <TrendChart data={monthlyTrends} isLoading={trendsLoading} />
+              <CardContent className="flex-1 p-6 pt-0">
+                <div className="w-full h-full">
+                  <TrendChart data={monthlyTrends} isLoading={trendsLoading} />
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -223,8 +227,8 @@ export default function Dashboard() {
         {/* Performance and Activity */}
         <div className="grid grid-cols-1 lg:grid-cols-7 gap-6 mb-8">
           <div className="lg:col-span-4">
-            <Card className="h-[480px]">
-              <CardHeader className="pb-4">
+            <Card className="h-[480px] flex flex-col">
+              <CardHeader className="pb-3 flex-shrink-0">
                 <CardTitle className="flex items-center gap-2">
                   <div className="rounded-full bg-purple-100 dark:bg-purple-900/50 p-1.5">
                     <Users className="h-4 w-4 text-purple-600 dark:text-purple-400" />
@@ -232,14 +236,14 @@ export default function Dashboard() {
                   Performance por Técnico
                 </CardTitle>
               </CardHeader>
-              <CardContent className="h-[400px] overflow-y-auto">
+              <CardContent className="flex-1 p-6 pt-0 overflow-y-auto">
                 <TechnicianPerformance data={technicianStats} isLoading={techLoading} />
               </CardContent>
             </Card>
           </div>
           <div className="lg:col-span-3">
-            <Card className="h-[480px]">
-              <CardHeader className="pb-4">
+            <Card className="h-[480px] flex flex-col">
+              <CardHeader className="pb-3 flex-shrink-0">
                 <CardTitle className="flex items-center gap-2">
                   <div className="rounded-full bg-orange-100 dark:bg-orange-900/50 p-1.5">
                     <Activity className="h-4 w-4 text-orange-600 dark:text-orange-400" />
@@ -247,7 +251,7 @@ export default function Dashboard() {
                   Atividade Recente
                 </CardTitle>
               </CardHeader>
-              <CardContent className="h-[400px] overflow-y-auto">
+              <CardContent className="flex-1 p-6 pt-0 overflow-y-auto">
                 <RecentActivity data={recentActivity} isLoading={activityLoading} />
               </CardContent>
             </Card>

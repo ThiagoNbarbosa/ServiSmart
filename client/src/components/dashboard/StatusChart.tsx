@@ -45,61 +45,59 @@ export default function StatusChart({ data, isLoading }: StatusChartProps) {
   })).filter(item => item.value > 0) : [];
 
   return (
-    <Card className="card-modern-gradient h-fit">
-      <CardHeader className="pb-4">
-        <div className="flex flex-col space-y-4">
-          <CardTitle className="text-lg font-bold">Distribuição por Status</CardTitle>
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            {Object.entries(STATUS_LABELS).map(([status, label]) => (
-              <div key={status} className="flex items-center space-x-2">
-                <span 
-                  className="status-indicator-modern"
-                  style={{ backgroundColor: COLORS[status as keyof typeof COLORS] }}
-                ></span>
-                <span className="text-foreground font-medium">
-                  {label}
-                </span>
-                <span className="text-muted-foreground font-bold">
-                  ({data?.[status as keyof StatusDistribution] || 0})
-                </span>
-              </div>
-            ))}
-          </div>
+    <div className="w-full h-full flex flex-col">
+      {/* Legend Section */}
+      <div className="flex-shrink-0 p-4 pb-2">
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          {Object.entries(STATUS_LABELS).map(([status, label]) => (
+            <div key={status} className="flex items-center space-x-2">
+              <span 
+                className="status-indicator-modern"
+                style={{ backgroundColor: COLORS[status as keyof typeof COLORS] }}
+              ></span>
+              <span className="text-foreground font-medium">
+                {label}
+              </span>
+              <span className="text-muted-foreground font-bold">
+                ({data?.[status as keyof StatusDistribution] || 0})
+              </span>
+            </div>
+          ))}
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="h-64 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={chartData}
-                cx="50%"
-                cy="50%"
-                innerRadius={45}
-                outerRadius={90}
-                paddingAngle={3}
-                dataKey="value"
-              >
-                {chartData.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={COLORS[entry.status as keyof typeof COLORS]} 
-                  />
-                ))}
-              </Pie>
-              <Tooltip 
-                formatter={(value: number, name: string) => [value, name]}
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px',
-                  color: 'hsl(var(--foreground))'
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+      
+      {/* Chart Section */}
+      <div className="flex-1 w-full min-h-0">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={chartData}
+              cx="50%"
+              cy="50%"
+              innerRadius={65}
+              outerRadius={120}
+              paddingAngle={3}
+              dataKey="value"
+            >
+              {chartData.map((entry, index) => (
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={COLORS[entry.status as keyof typeof COLORS]} 
+                />
+              ))}
+            </Pie>
+            <Tooltip 
+              formatter={(value: number, name: string) => [value, name]}
+              contentStyle={{
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '8px',
+                color: 'hsl(var(--foreground))'
+              }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
   );
 }
