@@ -57,15 +57,22 @@ export default function WorkOrders() {
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append('file', file);
-      return apiRequest('/api/work-orders/import', {
+      
+      const response = await fetch('/api/work-orders/import', {
         method: 'POST',
         body: formData,
       });
+      
+      if (!response.ok) {
+        throw new Error('Erro na importação');
+      }
+      
+      return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast({
         title: "Importação realizada com sucesso",
-        description: `${data.imported} ordens de serviço importadas`,
+        description: `${data.imported || data.processedRows || 0} ordens de serviço importadas`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/work-orders'] });
       setIsImportModalOpen(false);
