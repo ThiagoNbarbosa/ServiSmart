@@ -11,8 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, Settings, Database, Shield, Clock, RefreshCw, AlertTriangle } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ArrowLeft, Settings, Database, Shield, Clock, RefreshCw, AlertTriangle, Trash2 } from "lucide-react";
 import { Link } from "wouter";
+import { useToast } from "@/hooks/use-toast";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 const systemConfigSchema = z.object({
   systemName: z.string().min(1, "Nome do sistema é obrigatório"),
@@ -66,6 +69,162 @@ const mockLogs: SystemLog[] = [
     component: 'Database'
   },
 ];
+
+// Sistema Data Clear Button Component
+function SystemDataClearButton() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [isSecondConfirm, setIsSecondConfirm] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const clearDataMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/system/clear-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ confirm: 'CLEAR_ALL_DATA' }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Falha ao zerar dados');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "✅ Dados Zerados com Sucesso",
+        description: `${data.cleared.length} tabelas foram limpas: ${data.cleared.join(', ')}`,
+      });
+      
+      // Invalidate all queries to refresh the UI
+      queryClient.invalidateQueries();
+      
+      setIsOpen(false);
+      setConfirmText("");
+      setIsSecondConfirm(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "❌ Erro ao Zerar Dados",
+        description: error.message || "Falha na operação de limpeza",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleFirstConfirm = () => {
+    if (confirmText === "ZERAR TUDO") {
+      setIsSecondConfirm(true);
+    } else {
+      toast({
+        title: "Confirmação incorreta",
+        description: "Digite exatamente 'ZERAR TUDO' para continuar",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleFinalConfirm = () => {
+    clearDataMutation.mutate();
+  };
+
+  const handleCancel = () => {
+    setIsOpen(false);
+    setConfirmText("");
+    setIsSecondConfirm(false);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button 
+          variant="destructive" 
+          size="sm"
+          className="bg-red-600 hover:bg-red-700"
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          Zerar Dados
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center space-x-2 text-red-600">
+            <AlertTriangle className="h-5 w-5" />
+            <span>⚠️ OPERAÇÃO PERIGOSA</span>
+          </DialogTitle>
+          <DialogDescription className="text-red-600">
+            Esta ação irá DELETAR PERMANENTEMENTE todos os dados do sistema:
+            <br />• Todas as Ordens de Serviço
+            <br />• Todos os Contratos
+            <br />• Todos os Técnicos
+            <br />• Todo o Inventário
+            <br />• Todas as Notificações
+            <br />• Todos os Logs e Histórico
+            <br /><br />
+            <strong>ESTA AÇÃO NÃO PODE SER DESFEITA!</strong>
+          </DialogDescription>
+        </DialogHeader>
+
+        {!isSecondConfirm ? (
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-red-700">
+                Para continuar, digite exatamente: <code className="bg-red-100 px-1 rounded">ZERAR TUDO</code>
+              </label>
+              <Input
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                placeholder="Digite 'ZERAR TUDO'"
+                className="mt-2 border-red-300 focus:border-red-500"
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={handleCancel}>
+                Cancelar
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={handleFirstConfirm}
+                disabled={confirmText !== "ZERAR TUDO"}
+              >
+                Continuar
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="p-4 bg-red-100 border border-red-300 rounded-lg">
+              <h4 className="font-bold text-red-800 mb-2">CONFIRMAÇÃO FINAL</h4>
+              <p className="text-red-700 text-sm">
+                Você está prestes a deletar TODOS os dados do sistema.
+                <br />
+                Tem certeza absoluta que deseja continuar?
+              </p>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={handleCancel}>
+                Cancelar
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={handleFinalConfirm}
+                disabled={clearDataMutation.isPending}
+                className="bg-red-700 hover:bg-red-800"
+              >
+                {clearDataMutation.isPending ? "Zerando..." : "SIM, ZERAR TUDO"}
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function SystemConfig() {
   const [isLoading, setIsLoading] = useState(false);
@@ -396,6 +555,30 @@ export default function SystemConfig() {
                       <p className="text-sm text-gray-500">Backup diário do banco de dados</p>
                     </div>
                     <Badge className="bg-green-100 text-green-800">Ativo</Badge>
+                  </div>
+
+                  {/* Dangerous Operations Section */}
+                  <div className="mt-8 p-4 border-2 border-red-200 rounded-lg bg-red-50">
+                    <div className="flex items-center space-x-2 mb-4">
+                      <AlertTriangle className="h-5 w-5 text-red-600" />
+                      <h3 className="text-lg font-semibold text-red-800">Operações Perigosas</h3>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 border border-red-300 rounded-lg bg-white">
+                        <div>
+                          <h4 className="font-medium text-red-800">Zerar Dados do Sistema</h4>
+                          <p className="text-sm text-red-600">
+                            Remove TODOS os dados do sistema (OS, contratos, técnicos, etc.). 
+                            Esta ação não pode ser desfeita!
+                          </p>
+                          <p className="text-xs text-red-500 mt-1">
+                            ⚠️ Apenas disponível em ambiente de desenvolvimento
+                          </p>
+                        </div>
+                        <SystemDataClearButton />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
