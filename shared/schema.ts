@@ -10,7 +10,8 @@ import {
   boolean,
   decimal,
   uuid,
-  date
+  date,
+  pgEnum
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -521,3 +522,51 @@ export type MonthlyTrend = {
 export const insertAuxiliarSchema = createInsertSchema(auxiliares).omit({ id: true, createdAt: true });
 export type Auxiliar = typeof auxiliares.$inferSelect;
 export type InsertAuxiliar = z.infer<typeof insertAuxiliarSchema>;
+
+// Enums for Preventivas
+export const situationStatusEnum = pgEnum('situation_status', [
+  'ENVIADA_ORCAMENTO',
+  'FORNECEDOR_ACIONADO',
+  'LEVANTAMENTO_OK',
+  'ORCAMENTO_APROVADO_RETORNO_FORNECEDOR',
+  'RETORNO_FORNECEDOR',
+  'SERVICO_CONCLUIDO',
+  'SERVICO_CONCLUIDO_PENDENTE_RELATORIO'
+]);
+
+export const executionStatusEnum = pgEnum('execution_status', [
+  'ABERTA',
+  'CONCLUIDA',
+  'PARCIAL'
+]);
+
+export const schedulingStatusEnum = pgEnum('scheduling_status', [
+  'AGENDADO',
+  'EXECUTANDO'
+]);
+
+// Preventive Maintenance Orders table (RAT)
+export const preventiveMaintenanceOrders = pgTable("preventive_maintenance_orders", {
+  id: serial("id").primaryKey(),
+  reportCreatorId: integer("report_creator_id").references(() => technicians.id),
+  surveyDate: date("survey_date"),
+  contractNumber: varchar("contract_number", { length: 50 }),
+  workOrderNumber: varchar("work_order_number", { length: 50 }).unique(),
+  equipmentPrefix: varchar("equipment_prefix", { length: 20 }),
+  agencyName: varchar("agency_name", { length: 100 }),
+  preventiveBudgetValue: decimal("preventive_budget_value", { precision: 10, scale: 2 }),
+  portalDeadline: date("portal_deadline"),
+  situationStatus: situationStatusEnum("situation_status"),
+  preventiveTechnicianId: integer("preventive_technician_id").references(() => technicians.id),
+  scheduledDate: date("scheduled_date"),
+  scheduledStatus: schedulingStatusEnum("scheduled_status").default('AGENDADO'),
+  difficultiesNotes: text("difficulties_notes"),
+  executionStatus: executionStatusEnum("execution_status"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Preventivas insert schema
+export const insertPreventiveMaintenanceOrderSchema = createInsertSchema(preventiveMaintenanceOrders).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertPreventiveMaintenanceOrder = z.infer<typeof insertPreventiveMaintenanceOrderSchema>;
+export type PreventiveMaintenanceOrder = typeof preventiveMaintenanceOrders.$inferSelect;

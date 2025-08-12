@@ -14,6 +14,7 @@ import {
   inventoryTransactions,
   systemConfig,
   auxiliares,
+  preventiveMaintenanceOrders,
   type User,
   type UpsertUser,
   type InsertTechnician,
@@ -48,6 +49,8 @@ import {
   type InsertSystemConfig,
   type Auxiliar,
   type InsertAuxiliar,
+  type PreventiveMaintenanceOrder,
+  type InsertPreventiveMaintenanceOrder,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, lte, sql, count, avg, sum } from "drizzle-orm";
@@ -160,6 +163,13 @@ export interface IStorage {
 
   // System Data Reset operation
   clearAllData(): Promise<{ success: boolean; message: string; cleared: string[] }>;
+
+  // Preventive Maintenance Orders operations
+  getPreventiveMaintenanceOrders(): Promise<PreventiveMaintenanceOrder[]>;
+  getPreventiveMaintenanceOrder(id: number): Promise<PreventiveMaintenanceOrder | undefined>;
+  createPreventiveMaintenanceOrder(order: InsertPreventiveMaintenanceOrder): Promise<PreventiveMaintenanceOrder>;
+  updatePreventiveMaintenanceOrder(id: number, order: Partial<InsertPreventiveMaintenanceOrder>): Promise<PreventiveMaintenanceOrder>;
+  importPreventiveMaintenanceOrders(orders: any[]): Promise<PreventiveMaintenanceOrder[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -224,22 +234,7 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(contracts).where(eq(contracts.active, true));
   }
 
-  // Report Elaborators operations
-  async getReportElaborators(): Promise<any[]> {
-    // Return technicians who are report elaborators (collaborators)
-    // Based on the names provided, from "Paulo" onwards they are collaborators
-    const collaboratorNames = [
-      'Paulo', 'Danilo', 'Tairita', 'Talitta', 'Flávia', 'Lucas', 'Gustavo', 'Thiago'
-    ];
-    
-    const allTechnicians = await db.select().from(technicians).where(eq(technicians.active, true));
-    
-    return allTechnicians.filter(tech => 
-      collaboratorNames.some(name => 
-        tech.name.toLowerCase().includes(name.toLowerCase())
-      )
-    );
-  }
+
 
   async getContract(id: number): Promise<Contract | undefined> {
     const [contract] = await db.select().from(contracts).where(eq(contracts.id, id));
@@ -965,6 +960,63 @@ export class DatabaseStorage implements IStorage {
       eq(users.isActive, true),
       sql`${users.userLevel} IN ('ENGINEER', 'SUPERVISOR', 'ADMIN')`
     ));
+  }
+
+  // Preventive Maintenance Orders operations
+  async getPreventiveMaintenanceOrders(): Promise<PreventiveMaintenanceOrder[]> {
+    return await db.select().from(preventiveMaintenanceOrders).orderBy(desc(preventiveMaintenanceOrders.createdAt));
+  }
+
+  async getPreventiveMaintenanceOrder(id: number): Promise<PreventiveMaintenanceOrder | undefined> {
+    const [order] = await db.select().from(preventiveMaintenanceOrders).where(eq(preventiveMaintenanceOrders.id, id));
+    return order;
+  }
+
+  async createPreventiveMaintenanceOrder(order: InsertPreventiveMaintenanceOrder): Promise<PreventiveMaintenanceOrder> {
+    const [newOrder] = await db.insert(preventiveMaintenanceOrders).values(order).returning();
+    return newOrder;
+  }
+
+  async updatePreventiveMaintenanceOrder(id: number, order: Partial<InsertPreventiveMaintenanceOrder>): Promise<PreventiveMaintenanceOrder> {
+    const [updatedOrder] = await db
+      .update(preventiveMaintenanceOrders)
+      .set({ ...order, updatedAt: new Date() })
+      .where(eq(preventiveMaintenanceOrders.id, id))
+      .returning();
+    return updatedOrder;
+  }
+
+  async importPreventiveMaintenanceOrders(orders: any[]): Promise<PreventiveMaintenanceOrder[]> {
+    const importedOrders: PreventiveMaintenanceOrder[] = [];
+    
+    for (const orderData of orders) {
+      try {
+        // Map Excel data to database format
+        const mappedOrder: InsertPreventiveMaintenanceOrder = {
+          reportCreatorId: orderData.reportCreatorId || null,
+          surveyDate: orderData.surveyDate || null,
+          contractNumber: orderData.contractNumber || null,
+          workOrderNumber: orderData.workOrderNumber,
+          equipmentPrefix: orderData.equipmentPrefix || null,
+          agencyName: orderData.agencyName,
+          preventiveBudgetValue: orderData.preventiveBudgetValue || '0',
+          portalDeadline: orderData.portalDeadline || null,
+          situationStatus: orderData.situationStatus,
+          preventiveTechnicianId: orderData.preventiveTechnicianId || null,
+          scheduledDate: orderData.scheduledDate || null,
+          scheduledStatus: orderData.scheduledStatus || 'AGENDADO',
+          difficultiesNotes: orderData.difficultiesNotes || null,
+          executionStatus: orderData.executionStatus
+        };
+
+        const [newOrder] = await db.insert(preventiveMaintenanceOrders).values(mappedOrder).returning();
+        importedOrders.push(newOrder);
+      } catch (error) {
+        console.error(`Error importing preventive maintenance order ${orderData.workOrderNumber}:`, error);
+        // Continue with next order
+      }
+    }
+    return importedOrders;
   }
 
   // System Data Reset operation

@@ -1219,6 +1219,176 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper functions for Excel processing
+  function parseExcelDate(value: any): Date | null {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    if (typeof value === 'string') {
+      const parsed = new Date(value);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    }
+    // Excel serial number
+    if (typeof value === 'number') {
+      return new Date((value - 25569) * 86400 * 1000);
+    }
+    return null;
+  }
+
+  function normalizeSituationStatus(status: string) {
+    const statusMap: { [key: string]: string } = {
+      'Enviada para Orçamento': 'ENVIADA_ORCAMENTO',
+      'Fornecedor Acionado': 'FORNECEDOR_ACIONADO',
+      'Levantamento OK': 'LEVANTAMENTO_OK',
+      'Orçamento Aprovado - Retorno ao Fornecedor': 'ORCAMENTO_APROVADO_RETORNO_FORNECEDOR',
+      'Retorno ao Fornecedor': 'RETORNO_FORNECEDOR',
+      'Serviço Concluído': 'SERVICO_CONCLUIDO',
+      'Serviço Concluído - Pendente Relatório': 'SERVICO_CONCLUIDO_PENDENTE_RELATORIO'
+    };
+    return statusMap[status] || status;
+  }
+
+  function normalizeExecutionStatus(status: string) {
+    const statusMap: { [key: string]: string } = {
+      'ABERTA': 'ABERTA',
+      'CONCLUIDA': 'CONCLUIDA',
+      'CONCLUÍDA': 'CONCLUIDA',
+      'PARCIAL': 'PARCIAL'
+    };
+    return statusMap[status.toUpperCase()] || 'ABERTA';
+  }
+
+  // Preventive Maintenance Orders API
+  app.get('/api/preventive-maintenance-orders', async (req, res) => {
+    try {
+      const orders = await storage.getPreventiveMaintenanceOrders();
+      res.json(orders);
+    } catch (error) {
+      console.error('Error getting preventive maintenance orders:', error);
+      res.status(500).json({ error: 'Failed to get preventive maintenance orders' });
+    }
+  });
+
+  app.get('/api/preventive-maintenance-orders/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const order = await storage.getPreventiveMaintenanceOrder(id);
+      if (!order) {
+        return res.status(404).json({ error: 'Preventive maintenance order not found' });
+      }
+      res.json(order);
+    } catch (error) {
+      console.error('Error getting preventive maintenance order:', error);
+      res.status(500).json({ error: 'Failed to get preventive maintenance order' });
+    }
+  });
+
+  app.post('/api/preventive-maintenance-orders', async (req, res) => {
+    try {
+      const order = await storage.createPreventiveMaintenanceOrder(req.body);
+      res.json(order);
+    } catch (error) {
+      console.error('Error creating preventive maintenance order:', error);
+      res.status(500).json({ error: 'Failed to create preventive maintenance order' });
+    }
+  });
+
+  app.put('/api/preventive-maintenance-orders/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const order = await storage.updatePreventiveMaintenanceOrder(id, req.body);
+      res.json(order);
+    } catch (error) {
+      console.error('Error updating preventive maintenance order:', error);
+      res.status(500).json({ error: 'Failed to update preventive maintenance order' });
+    }
+  });
+
+  // Import Preventive Maintenance Orders from Excel
+  app.post('/api/preventive-maintenance-orders/import', upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'Nenhum arquivo foi enviado' });
+      }
+
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(req.file.buffer);
+      const worksheet = workbook.getWorksheet(1);
+
+      if (!worksheet) {
+        return res.status(400).json({ error: 'Planilha não encontrada' });
+      }
+
+      const importedOrders: any[] = [];
+      const errors: string[] = [];
+
+      // Skip header row, start from row 2
+      for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
+        const row = worksheet.getRow(rowNumber);
+        
+        // Skip empty rows
+        if (!row.hasValues) continue;
+
+        try {
+          // Map Excel columns to database fields according to the specification
+          const orderData = {
+            reportCreator: row.getCell(1).value?.toString() || '', // A: ELABORADOR DE RELATÓRIO
+            surveyDate: parseExcelDate(row.getCell(2).value), // B: DATA LEVANTAMENTO
+            contractNumber: row.getCell(3).value?.toString() || '', // C: CONTRATO
+            workOrderNumber: row.getCell(4).value?.toString() || '', // D: OS
+            equipmentPrefix: row.getCell(5).value?.toString() || '', // E: PREFIXO
+            agencyName: row.getCell(6).value?.toString() || '', // F: AGÊNCIA
+            preventiveBudgetValue: parseFloat(row.getCell(7).value?.toString() || '0'), // G: VALOR PREVENTIVA ORÇAMENTO
+            portalDeadline: parseExcelDate(row.getCell(8).value), // H: VENCIMENTO PORTAL
+            situationStatus: normalizeSituationStatus(row.getCell(9).value?.toString() || ''), // I: SITUAÇÃO
+            preventiveTechnician: row.getCell(10).value?.toString() || '', // J: TÉCNICO PREVENTIVA
+            scheduledDate: parseExcelDate(row.getCell(11).value), // K: DATA AGENDAMENTO
+            difficultiesNotes: row.getCell(12).value?.toString() || '', // L: DIFICULDADES
+            executionStatus: normalizeExecutionStatus(row.getCell(13).value?.toString() || ''), // M: STATUS
+          };
+
+          // Validate required fields
+          if (!orderData.workOrderNumber) {
+            errors.push(`Linha ${rowNumber}: Número da OS é obrigatório`);
+            continue;
+          }
+
+          if (!orderData.agencyName) {
+            errors.push(`Linha ${rowNumber}: Nome da agência é obrigatório`);
+            continue;
+          }
+
+          importedOrders.push(orderData);
+        } catch (error) {
+          errors.push(`Linha ${rowNumber}: Erro ao processar dados - ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+        }
+      }
+
+      if (errors.length > 0 && importedOrders.length === 0) {
+        return res.status(400).json({ 
+          error: 'Nenhuma ordem válida encontrada na planilha',
+          details: errors
+        });
+      }
+
+      // Import valid orders
+      const results = await storage.importPreventiveMaintenanceOrders(importedOrders);
+
+      res.json({
+        success: true,
+        imported: results.length,
+        total: importedOrders.length,
+        errors: errors.length > 0 ? errors : undefined
+      });
+
+    } catch (error) {
+      console.error('Error importing preventive maintenance orders:', error);
+      res.status(500).json({ 
+        error: 'Erro ao importar ordens de manutenção preventiva',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // WebSocket setup

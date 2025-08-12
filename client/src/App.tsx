@@ -20,6 +20,7 @@ import HelpSupport from "@/pages/help-support";
 import Landing from "@/pages/landing";
 import NotFound from "@/pages/not-found";
 import PreventiveMaintenance from "@/pages/preventive-maintenance";
+import PreventiveOrders from "@/pages/preventive-orders";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -40,6 +41,7 @@ function Router() {
             <Route path="/users" component={UserManagement} />
             <Route path="/work-orders" component={WorkOrders} />
             <Route path="/preventive-maintenance" component={PreventiveMaintenance} />
+            <Route path="/preventive-orders" component={PreventiveOrders} />
             <Route path="/profile" component={UserProfile} />
             <Route path="/management" component={Management} />
             <Route path="/system-config" component={SystemConfig} />

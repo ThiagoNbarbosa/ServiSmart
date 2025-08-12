@@ -1,0 +1,273 @@
+# 🔗 INTEGRAÇÃO PLANILHA PREVENTIVAS → SISTEMA MAFFENG
+
+## 📊 MAPEAMENTO DE CAMPOS
+
+### PLANILHA PREVENTIVAS → WORK ORDERS
+```
+A1: ELABORADOR DE RELATÓRIO    → report_creator_id (FK)
+B1: DATA LEVANTAMENTO          → survey_date
+C1: CONTRATO                   → contract_number
+D1: OS                         → work_order_number
+E1: PREFIXO                    → equipment_prefix
+F1: AGÊNCIA                    → agency_name
+G1: VALOR PREVENTIVA ORÇAMENTO → preventive_budget_value
+H1: VENCIMENTO PORTAL          → portal_deadline
+I1: SITUAÇÃO                   → situation_status
+J1: TÉCNICO PREVENTIVA         → preventive_technician_id (FK)
+K1: DATA AGENDAMENTO           → scheduled_date
+L1: DIFICULDADES               → difficulties_notes
+M1: STATUS                     → execution_status
+```
+
+## 🗄️ ESTRUTURA DE BANCO SUGERIDA
+
+### Tabela: `preventive_maintenance_orders`
+```sql
+CREATE TABLE preventive_maintenance_orders (
+    id SERIAL PRIMARY KEY,
+    report_creator_id INT REFERENCES technicians(id),
+    survey_date DATE,
+    contract_number VARCHAR(50),
+    work_order_number VARCHAR(50) UNIQUE,
+    equipment_prefix VARCHAR(20),
+    agency_name VARCHAR(100),
+    preventive_budget_value DECIMAL(10,2),
+    portal_deadline DATE,
+    situation_status VARCHAR(50),
+    preventive_technician_id INT REFERENCES technicians(id),
+    scheduled_date DATE,
+    scheduled_status VARCHAR(20) DEFAULT 'AGENDADO', -- 'AGENDADO' ou 'EXECUTANDO'
+    difficulties_notes TEXT,
+    execution_status VARCHAR(20),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+### Enums Sugeridos
+```sql
+-- Status de Situação
+CREATE TYPE situation_status_enum AS ENUM (
+    'ENVIADA_ORCAMENTO',
+    'FORNECEDOR_ACIONADO',
+    'LEVANTAMENTO_OK',
+    'ORCAMENTO_APROVADO_RETORNO_FORNECEDOR',
+    'RETORNO_FORNECEDOR',
+    'SERVICO_CONCLUIDO',
+    'SERVICO_CONCLUIDO_PENDENTE_RELATORIO'
+);
+
+-- Status de Execução
+CREATE TYPE execution_status_enum AS ENUM (
+    'ABERTA',
+    'CONCLUIDA',
+    'PARCIAL'
+);
+
+-- Status de Agendamento
+CREATE TYPE scheduling_status_enum AS ENUM (
+    'AGENDADO',
+    'EXECUTANDO'
+);
+```
+
+## 🔧 IMPLEMENTAÇÃO NO FRONTEND
+
+### 1. Atualizar Página Work Orders
+**Arquivo**: `client/src/pages/work-orders.tsx`
+
+```typescript
+// Adicionar ao formato de importação existente
+const PREVENTIVAS_IMPORT_FORMAT = {
+  A: "ELABORADOR DE RELATÓRIO",
+  B: "DATA LEVANTAMENTO", 
+  C: "CONTRATO",
+  D: "OS",
+  E: "PREFIXO",
+  F: "AGÊNCIA",
+  G: "VALOR PREVENTIVA ORÇAMENTO",
+  H: "VENCIMENTO PORTAL",
+  I: "SITUAÇÃO",
+  J: "TÉCNICO PREVENTIVA",
+  K: "DATA AGENDAMENTO", 
+  L: "DIFICULDADES",
+  M: "STATUS"
+};
+```
+
+### 2. Novo Componente: Preventivas Import Modal
+**Arquivo**: `client/src/components/PreventivasImportModal.tsx`
+
+```typescript
+interface PreventivasImportModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onImport: (data: PreventivasData[]) => void;
+}
+
+const PreventivasImportModal = ({ isOpen, onClose, onImport }: PreventivasImportModalProps) => {
+  // Lógica específica para importação de Preventivas
+  // Validação dos campos obrigatórios
+  // Preview dos dados antes da importação
+};
+```
+
+### 3. Validação com Zod
+```typescript
+const PreventivasImportSchema = z.object({
+  reportCreator: z.string().min(1, "Elaborador de relatório obrigatório"),
+  surveyDate: z.date(),
+  contractNumber: z.string().optional(),
+  workOrderNumber: z.string().min(1, "Número da OS obrigatório"),
+  equipmentPrefix: z.string().optional(),
+  agencyName: z.string().min(1, "Nome da agência obrigatório"),
+  preventiveBudgetValue: z.number().positive("Valor deve ser positivo"),
+  portalDeadline: z.date(),
+  situationStatus: z.enum([
+    "ENVIADA_ORCAMENTO",
+    "FORNECEDOR_ACIONADO", 
+    "LEVANTAMENTO_OK",
+    "ORCAMENTO_APROVADO_RETORNO_FORNECEDOR",
+    "RETORNO_FORNECEDOR",
+    "SERVICO_CONCLUIDO",
+    "SERVICO_CONCLUIDO_PENDENTE_RELATORIO"
+  ]),
+  preventiveTechnician: z.string().optional(),
+  scheduledDate: z.date().optional(),
+  scheduledStatus: z.enum(["AGENDADO", "EXECUTANDO"]).optional(),
+  difficultiesNotes: z.string().optional(),
+  executionStatus: z.enum(["ABERTA", "CONCLUIDA", "PARCIAL"])
+});
+```
+
+## 🚀 IMPLEMENTAÇÃO NO BACKEND
+
+### 1. Nova Rota de Importação RAT
+**Arquivo**: `server/routes/work-orders.ts`
+
+```typescript
+// POST /api/work-orders/import-rat
+router.post('/import-rat', upload.single('file'), async (req, res) => {
+  try {
+    const workbook = XLSX.read(req.file.buffer);
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rawData = XLSX.utils.sheet_to_json(worksheet);
+    
+    // Mapear dados da planilha para formato do sistema
+    const mappedData = rawData.map(row => mapRATData(row));
+    
+    // Validar dados
+    const validatedData = mappedData.map(data => 
+      RATImportSchema.parse(data)
+    );
+    
+    // Inserir no banco
+    const result = await db.insert(workOrdersRAT).values(validatedData);
+    
+    res.json({ success: true, imported: result.length });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+```
+
+### 2. Função de Mapeamento
+```typescript
+const mapRATData = (row: any) => ({
+  reportCreator: row['ELABORADOR DE RELATÓRIO'],
+  surveyDate: parseDate(row['DATA LEVANTAMENTO']),
+  contractNumber: row['CONTRATO'],
+  workOrderNumber: row['OS'],
+  equipmentPrefix: row['PREFIXO'],
+  agencyName: row['AGÊNCIA'],
+  ratBudgetValue: parseFloat(row['VALOR RAT ORÇAMENTO']),
+  portalDeadline: parseDate(row['VENCIMENTO PORTAL']),
+  situationStatus: normalizeSituationStatus(row['SITUAÇÃO']),
+  preventiveTechnician: row['TÉCNICO PREVENTIVA'],
+  scheduledDate: parseScheduledDate(row['DATA AGENDAMENTO']),
+  scheduledStatus: determineScheduledStatus(row['DATA AGENDAMENTO']),
+  difficultiesNotes: row['DIFICULDADES'],
+  executionStatus: row['STATUS']
+});
+
+// Função auxiliar para determinar status de agendamento
+const determineScheduledStatus = (agendamento: string) => {
+  if (agendamento === 'EXECUTANDO') return 'EXECUTANDO';
+  if (isValidDate(agendamento)) return 'AGENDADO';
+  return null;
+};
+
+// Função para normalizar status de situação
+const normalizeSituationStatus = (situacao: string) => {
+  const statusMap = {
+    'Enviada para Orçamento': 'ENVIADA_ORCAMENTO',
+    'Fornecedor Acionado': 'FORNECEDOR_ACIONADO',
+    'Levantamento OK': 'LEVANTAMENTO_OK',
+    'Orçamento Aprovado - Retorno ao Fornecedor': 'ORCAMENTO_APROVADO_RETORNO_FORNECEDOR',
+    'Retorno ao Fornecedor': 'RETORNO_FORNECEDOR',
+    'Serviço Concluído': 'SERVICO_CONCLUIDO',
+    'Serviço Concluído - Pendente Relatório': 'SERVICO_CONCLUIDO_PENDENTE_RELATORIO'
+  };
+  
+  return statusMap[situacao] || situacao;
+};
+```
+
+## 📊 NOVA PÁGINA: RAT MANAGEMENT
+
+### Estrutura da Página
+```
+/rat-management
+├── Header com estatísticas
+├── Filtros (por agência, status, técnico)
+├── Tabela com dados RAT
+├── Modal de detalhes
+└── Ações em lote
+```
+
+### Funcionalidades
+- ✅ Importação de planilhas RAT
+- ✅ Visualização em tabela
+- ✅ Filtros avançados
+- ✅ Exportação de relatórios
+- ✅ Acompanhamento de prazos
+- ✅ Notificações de vencimento
+- ✅ Dashboard específico RAT
+
+## 🎯 PRÓXIMOS PASSOS
+
+### Fase 1: Core Implementation
+1. Criar estrutura de banco
+2. Implementar importação RAT
+3. Criar página RAT Management
+4. Testes de importação
+
+### Fase 2: Features Avançadas
+1. Dashboard RAT específico
+2. Notificações automáticas
+3. Relatórios avançados
+4. Integração com sistema existente
+
+### Fase 3: Otimizações
+1. Validações em tempo real
+2. Preview de importação
+3. Histórico de alterações
+4. APIs para integração externa
+
+## 🔍 CONSIDERAÇÕES TÉCNICAS
+
+### Performance
+- Importação em lotes para arquivos grandes
+- Indexação em campos de busca frequente
+- Cache de consultas complexas
+
+### Segurança
+- Validação rigorosa de dados
+- Sanitização de inputs
+- Logs de auditoria
+
+### UX/UI
+- Feedback visual durante importação
+- Estados de loading apropriados
+- Mensagens de erro claras
+- Preview antes da importação final
