@@ -1,0 +1,183 @@
+🔧 Plano de Refatoração - Sistema MAFFENG
+Remoção das páginas: Ordens de Serviço + Manutenção Preventiva
+📋 OBJETIVO
+Simplificar o sistema mantendo apenas a página Ordens Preventivas que já possui:
+
+✅ Sistema FlexibleExcelReader (detecção automática de colunas)
+✅ Importação inteligente de planilhas RAT
+✅ Interface otimizada para manutenção preventiva
+
+
+🗂️ ARQUIVOS PARA REMOVER
+Frontend (client/src/pages/)
+bash# Páginas a serem removidas
+❌ work-orders.tsx           # Página de Ordens de Serviço
+❌ preventive-maintenance.tsx # Página de Manutenção Preventiva
+
+# Manter apenas:
+✅ preventive-orders.tsx     # Página de Ordens Preventivas (NOVA)
+Componentes relacionados (se existirem)
+bash# Verificar e remover se necessário:
+❌ client/src/components/work-orders/
+❌ client/src/components/preventive-maintenance/
+❌ client/src/components/StatusChart.tsx (se usado apenas no dashboard)
+❌ client/src/components/TrendChart.tsx (se usado apenas no dashboard)
+Backend (server/src/)
+bash# Rotas a serem removidas
+❌ routes/work-orders.ts
+❌ routes/preventive-maintenance.ts
+
+# Manter apenas:
+✅ routes/preventive-orders.ts  # Rotas das Ordens Preventivas
+
+# Schemas do banco (verificar)
+❌ schemas/work-orders.ts (se diferente de preventive-orders)
+❌ schemas/preventive-maintenance.ts
+
+🔄 ARQUIVOS PARA ATUALIZAR
+1. Sidebar Navigation
+Arquivo: client/src/components/Sidebar.tsx ou similar
+ANTES:
+jsx📊 Dashboard
+📋 Ordens de Serviço      ← REMOVER
+🔧 Manutenção Preventiva  ← REMOVER  
+📋 Ordens Preventivas    ← MANTER
+👥 Equipe
+📊 Relatórios
+⚙️ Gestão
+DEPOIS:
+jsx📊 Dashboard
+📋 Ordens Preventivas    ← ÚNICA página de manutenção
+👥 Equipe
+📊 Relatórios
+⚙️ Gestão
+2. Roteamento
+Arquivo: client/src/App.tsx ou router.tsx
+REMOVER:
+jsx<Route path="/work-orders" element={<WorkOrders />} />
+<Route path="/preventive-maintenance" element={<PreventiveMaintenance />} />
+MANTER:
+jsx<Route path="/preventive-orders" element={<PreventiveOrders />} />
+3. Dashboard - Simplificar métricas
+Arquivo: client/src/pages/dashboard.tsx
+ATUALIZAR KPIs para focar apenas em Ordens Preventivas:
+jsx// ANTES: 4 KPIs genéricos
+[📋 Total OS] [⏳ Pendentes] [✅ Concluídas] [📈 Taxa]
+
+// DEPOIS: KPIs específicos para Preventivas
+[🔧 Total Preventivas] [📅 Agendadas] [✅ Executadas] [📊 Eficiência]
+4. APIs do Dashboard
+Arquivo: server/src/routes/dashboard.ts
+ATUALIZAR endpoints:
+typescript// Focar apenas em dados de Ordens Preventivas
+GET /api/dashboard/preventive-metrics
+GET /api/dashboard/preventive-status-distribution
+GET /api/dashboard/preventive-monthly-trends
+
+🎨 MELHORIAS NA PÁGINA ORDENS PREVENTIVAS
+1. Renomear para página principal
+Sugestão: Alterar rota de /preventive-orders para /maintenance ou /orders
+2. Melhorar título e descrição
+jsx// ANTES
+Ordens Preventivas
+Gerenciar ordens de manutenção preventiva e importações RAT
+
+// DEPOIS  
+Manutenção
+Central de controle de todas as ordens de manutenção preventiva
+3. Expandir funcionalidades
+
+✅ Manter sistema FlexibleExcelReader
+➕ Adicionar filtros avançados
+➕ Adicionar busca por agência/técnico
+➕ Adicionar export de dados
+➕ Adicionar detalhes da ordem (modal)
+
+
+📊 ATUALIZAR DASHBOARD
+KPIs Focados em Preventivas
+jsx┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐
+│🔧 TOTAL │ │📅 AGEND │ │✅ EXECUT│ │⚡ URGENT │
+│   0     │ │   0     │ │   0     │ │   0     │
+│Prevent. │ │Agendadas│ │Executadas│ │Urgentes │
+└─────────┘ └─────────┘ └─────────┘ └─────────┘
+Gráficos Específicos
+
+Status Distribution: Situação das ordens (Agendada, Executada, Pendente, etc.)
+Timeline: Ordens por data de agendamento vs execução
+Técnicos: Performance por técnico preventivo
+Agências: Distribuição por agência
+
+
+🗂️ ESTRUTURA FINAL SIMPLIFICADA
+📁 MAFFENG/
+├── 📊 Dashboard (métricas de preventivas)
+├── 🔧 Manutenção (ex-Ordens Preventivas)
+│   ├── ✅ Sistema FlexibleExcelReader
+│   ├── ✅ Importação inteligente RAT  
+│   ├── ✅ Listagem de ordens
+│   └── ➕ Filtros e busca
+├── 👥 Equipe
+├── 📊 Relatórios  
+├── ⚙️ Gestão
+└── 🆘 Ajuda
+
+🚀 ORDEM DE EXECUÇÃO
+Fase 1: Preparação
+
+✅ Backup do código atual
+✅ Testar funcionalidades da página Ordens Preventivas
+✅ Documentar dados importantes das páginas a remover
+
+Fase 2: Remoção Backend
+
+🗑️ Remover rotas antigas
+🗑️ Remover schemas desnecessários
+🔄 Atualizar APIs do dashboard
+
+Fase 3: Remoção Frontend
+
+🗑️ Remover páginas antigas
+🔄 Atualizar navegação/sidebar
+🔄 Atualizar roteamento
+🔄 Simplificar dashboard
+
+Fase 4: Melhorias
+
+➕ Melhorar página Ordens Preventivas
+➕ Adicionar funcionalidades extras
+🧪 Testes finais
+📚 Atualizar documentação
+
+
+⚠️ CUIDADOS IMPORTANTES
+Dados Existentes
+
+❗ Verificar se há dados importantes nas tabelas a serem removidas
+❗ Fazer migração de dados se necessário
+❗ Backup completo antes de remover
+
+Testes
+
+🧪 Testar todas as rotas após remoção
+🧪 Verificar se dashboard funciona corretamente
+🧪 Validar sistema de importação FlexibleExcelReader
+
+Documentação
+
+📝 Atualizar documentação técnica
+📝 Atualizar capturas de tela
+📝 Revisar README/manual do usuário
+
+
+💡 BENEFÍCIOS DA REFATORAÇÃO
+✅ Simplicidade: Interface mais limpa e focada
+✅ Manutenção: Menos código para manter
+✅ Performance: Menos rotas e componentes
+✅ UX: Fluxo mais direto para o usuário
+✅ Inovação: Foco no sistema FlexibleExcelReader
+✅ Especialização: Sistema dedicado a manutenção preventiva
+
+Status: 📋 Plano pronto para execução
+Estimativa: 4-6 horas de desenvolvimento
+Impacto: Alto (simplificação significativa)
