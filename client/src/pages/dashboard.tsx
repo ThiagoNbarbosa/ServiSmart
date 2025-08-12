@@ -96,10 +96,6 @@ export default function Dashboard() {
               <LayoutDashboard className="h-4 w-4 mr-2" />
               {tvMode ? 'Modo Normal' : 'Modo TV'}
             </Button>
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Preventiva
-            </Button>
           </div>
         </div>
 
