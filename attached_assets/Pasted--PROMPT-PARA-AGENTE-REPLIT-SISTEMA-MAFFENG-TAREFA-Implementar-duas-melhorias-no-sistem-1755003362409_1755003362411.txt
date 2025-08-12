@@ -1,0 +1,854 @@
+# 🤖 PROMPT PARA AGENTE REPLIT - SISTEMA MAFFENG
+
+**TAREFA:** Implementar duas melhorias no sistema MAFFENG conforme especificações abaixo.
+
+---
+
+## 📋 CONTEXTO DO SISTEMA
+
+**Sistema atual:** MAFFENG (CMMS) - React + TypeScript + Express + PostgreSQL + Drizzle ORM
+**Estrutura:** Frontend (client/) + Backend (server/) + Database (PostgreSQL)
+**Status:** Sistema funcionando com Dashboard, Manutenção (preventivas), Equipe básica
+
+---
+
+## 🎯 OBJETIVOS DAS IMPLEMENTAÇÕES
+
+### OBJETIVO 1: EXPANDIR PÁGINA DE EQUIPE
+- Adicionar tipos: **ELABORADOR DE RELATÓRIO** e **TÉCNICO DE CAMPO**
+- Implementar filtros por tipo de membro
+- Criar resumo estatístico por tipo
+- Manter tipos existentes: TÉCNICO e AUXILIAR
+
+### OBJETIVO 2: CRIAR PÁGINA ORDENS DE SERVIÇO
+- Mover ordens da página Manutenção para nova página dedicada
+- Implementar menu de ações para cada ordem:
+  - Atribuir Elaborador
+  - Atribuir Técnico de Campo  
+  - Editar Ordem
+  - Ver Detalhes
+
+---
+
+## 🔧 IMPLEMENTAÇÃO SEQUENCIAL
+
+### ETAPA 1: ATUALIZAR BANCO DE DADOS
+
+**1.1 - Criar migration para tipos de membros**
+```sql
+-- Arquivo: server/src/migrations/add_member_types.sql
+ALTER TABLE team_members ADD COLUMN IF NOT EXISTS tipo VARCHAR(20) DEFAULT 'TECNICO';
+UPDATE team_members SET tipo = 'TECNICO' WHERE tipo IS NULL;
+
+-- Valores válidos: TECNICO, AUXILIAR, ELABORADOR, CAMPO
+```
+
+**1.2 - Criar tabela de atribuições**
+```sql
+-- Arquivo: server/src/migrations/create_order_assignments.sql
+CREATE TABLE IF NOT EXISTS order_assignments (
+  id SERIAL PRIMARY KEY,
+  work_order_number VARCHAR(50) NOT NULL,
+  elaborador_id INTEGER REFERENCES team_members(id),
+  tecnico_campo_id INTEGER REFERENCES team_members(id),
+  data_atribuicao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  observacoes TEXT,
+  status VARCHAR(20) DEFAULT 'ATRIBUIDA'
+);
+```
+
+### ETAPA 2: ATUALIZAR SCHEMAS DRIZZLE
+
+**2.1 - Atualizar schema team_members**
+```typescript
+// Arquivo: server/src/schemas/team-members.ts
+export const teamMembers = pgTable('team_members', {
+  id: serial('id').primaryKey(),
+  nome: varchar('nome', { length: 255 }).notNull(),
+  sobrenome: varchar('sobrenome', { length: 255 }).notNull(),
+  email: varchar('email', { length: 255 }).unique(),
+  telefone: varchar('telefone', { length: 20 }),
+  tipo: varchar('tipo', { length: 20 }).notNull().default('TECNICO'), // NOVO CAMPO
+  especialidade: varchar('especialidade', { length: 255 }),
+  departamento: varchar('departamento', { length: 255 }),
+  status: varchar('status', { length: 20 }).default('ATIVO'),
+  localizacao: varchar('localizacao', { length: 255 }),
+  nivelAcesso: varchar('nivel_acesso', { length: 20 }).default('BASICO'),
+  urlFotoPerfil: varchar('url_foto_perfil', { length: 500 }),
+  biografia: text('biografia'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow()
+});
+```
+
+**2.2 - Criar schema order_assignments**
+```typescript
+// Arquivo: server/src/schemas/order-assignments.ts
+export const orderAssignments = pgTable('order_assignments', {
+  id: serial('id').primaryKey(),
+  workOrderNumber: varchar('work_order_number', { length: 50 }).notNull(),
+  elaboradorId: integer('elaborador_id').references(() => teamMembers.id),
+  tecnicoCampoId: integer('tecnico_campo_id').references(() => teamMembers.id),
+  dataAtribuicao: timestamp('data_atribuicao').defaultNow(),
+  observacoes: text('observacoes'),
+  status: varchar('status', { length: 20 }).default('ATRIBUIDA')
+});
+```
+
+### ETAPA 3: CRIAR/ATUALIZAR APIs BACKEND
+
+**3.1 - Atualizar API team-members**
+```typescript
+// Arquivo: server/src/routes/team-members.ts
+import express from 'express';
+import { teamMembers } from '../schemas/team-members';
+import { db } from '../db';
+import { eq } from 'drizzle-orm';
+
+export const teamMembersRouter = express.Router();
+
+// Listar membros com filtro por tipo
+teamMembersRouter.get('/', async (req, res) => {
+  try {
+    const { tipo, status } = req.query;
+    
+    let query = db.select().from(teamMembers);
+    
+    if (tipo && tipo !== 'TODOS') {
+      query = query.where(eq(teamMembers.tipo, tipo as string));
+    }
+    
+    if (status) {
+      query = query.where(eq(teamMembers.status, status as string));
+    }
+    
+    const membros = await query;
+    res.json(membros);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar membros' });
+  }
+});
+
+// Estatísticas por tipo
+teamMembersRouter.get('/stats', async (req, res) => {
+  try {
+    const membros = await db.select().from(teamMembers);
+    
+    const stats = {
+      tecnicos: membros.filter(m => m.tipo === 'TECNICO').length,
+      auxiliares: membros.filter(m => m.tipo === 'AUXILIAR').length,
+      elaboradores: membros.filter(m => m.tipo === 'ELABORADOR').length,
+      campo: membros.filter(m => m.tipo === 'CAMPO').length,
+      total: membros.length
+    };
+    
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar estatísticas' });
+  }
+});
+
+// Criar membro
+teamMembersRouter.post('/', async (req, res) => {
+  try {
+    const novoMembro = await db.insert(teamMembers).values(req.body).returning();
+    res.status(201).json(novoMembro[0]);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao criar membro' });
+  }
+});
+
+// Atualizar membro
+teamMembersRouter.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const membroAtualizado = await db
+      .update(teamMembers)
+      .set({ ...req.body, updatedAt: new Date() })
+      .where(eq(teamMembers.id, parseInt(id)))
+      .returning();
+    
+    res.json(membroAtualizado[0]);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao atualizar membro' });
+  }
+});
+```
+
+**3.2 - Criar API order-assignments**
+```typescript
+// Arquivo: server/src/routes/order-assignments.ts
+import express from 'express';
+import { orderAssignments } from '../schemas/order-assignments';
+import { db } from '../db';
+import { eq } from 'drizzle-orm';
+
+export const orderAssignmentsRouter = express.Router();
+
+// Atribuir elaborador
+orderAssignmentsRouter.post('/:orderNumber/assign-elaborador', async (req, res) => {
+  try {
+    const { orderNumber } = req.params;
+    const { elaboradorId, observacoes } = req.body;
+    
+    // Verificar se já existe atribuição
+    const existingAssignment = await db
+      .select()
+      .from(orderAssignments)
+      .where(eq(orderAssignments.workOrderNumber, orderNumber));
+    
+    if (existingAssignment.length > 0) {
+      // Atualizar existente
+      const updated = await db
+        .update(orderAssignments)
+        .set({ elaboradorId, observacoes, dataAtribuicao: new Date() })
+        .where(eq(orderAssignments.workOrderNumber, orderNumber))
+        .returning();
+      
+      res.json(updated[0]);
+    } else {
+      // Criar nova atribuição
+      const newAssignment = await db
+        .insert(orderAssignments)
+        .values({
+          workOrderNumber: orderNumber,
+          elaboradorId,
+          observacoes
+        })
+        .returning();
+      
+      res.status(201).json(newAssignment[0]);
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao atribuir elaborador' });
+  }
+});
+
+// Atribuir técnico de campo
+orderAssignmentsRouter.post('/:orderNumber/assign-campo', async (req, res) => {
+  try {
+    const { orderNumber } = req.params;
+    const { tecnicoCampoId, observacoes } = req.body;
+    
+    const existingAssignment = await db
+      .select()
+      .from(orderAssignments)
+      .where(eq(orderAssignments.workOrderNumber, orderNumber));
+    
+    if (existingAssignment.length > 0) {
+      const updated = await db
+        .update(orderAssignments)
+        .set({ tecnicoCampoId, observacoes, dataAtribuicao: new Date() })
+        .where(eq(orderAssignments.workOrderNumber, orderNumber))
+        .returning();
+      
+      res.json(updated[0]);
+    } else {
+      const newAssignment = await db
+        .insert(orderAssignments)
+        .values({
+          workOrderNumber: orderNumber,
+          tecnicoCampoId,
+          observacoes
+        })
+        .returning();
+      
+      res.status(201).json(newAssignment[0]);
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao atribuir técnico de campo' });
+  }
+});
+
+// Buscar atribuições de uma ordem
+orderAssignmentsRouter.get('/:orderNumber', async (req, res) => {
+  try {
+    const { orderNumber } = req.params;
+    const assignments = await db
+      .select()
+      .from(orderAssignments)
+      .where(eq(orderAssignments.workOrderNumber, orderNumber));
+    
+    res.json(assignments[0] || null);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar atribuições' });
+  }
+});
+```
+
+### ETAPA 4: ATUALIZAR FRONTEND - PÁGINA DE EQUIPE
+
+**4.1 - Atualizar página team-information.tsx**
+```tsx
+// Arquivo: client/src/pages/team-information.tsx
+import React, { useState, useEffect, useMemo } from 'react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+interface TeamMember {
+  id: number;
+  nome: string;
+  sobrenome: string;
+  email: string;
+  telefone: string;
+  tipo: 'TECNICO' | 'AUXILIAR' | 'ELABORADOR' | 'CAMPO';
+  especialidade: string;
+  status: 'ATIVO' | 'OCUPADO' | 'AUSENTE';
+  departamento: string;
+  urlFotoPerfil?: string;
+}
+
+interface TeamStats {
+  tecnicos: number;
+  auxiliares: number;
+  elaboradores: number;
+  campo: number;
+  total: number;
+}
+
+const tipoConfig = {
+  TECNICO: { icon: '🔧', color: 'blue', label: 'Técnico', bg: 'bg-blue-50' },
+  AUXILIAR: { icon: '💻', color: 'green', label: 'Auxiliar', bg: 'bg-green-50' },
+  ELABORADOR: { icon: '📝', color: 'purple', label: 'Elaborador', bg: 'bg-purple-50' },
+  CAMPO: { icon: '🏗️', color: 'orange', label: 'Campo', bg: 'bg-orange-50' }
+};
+
+const TeamInformation = () => {
+  const [membros, setMembros] = useState<TeamMember[]>([]);
+  const [stats, setStats] = useState<TeamStats>({ tecnicos: 0, auxiliares: 0, elaboradores: 0, campo: 0, total: 0 });
+  const [filtroTipo, setFiltroTipo] = useState<string>('TODOS');
+  const [loading, setLoading] = useState(true);
+  const [modalAberto, setModalAberto] = useState(false);
+
+  // Buscar membros da equipe
+  useEffect(() => {
+    const fetchMembros = async () => {
+      try {
+        const response = await fetch(`/api/team-members?tipo=${filtroTipo}`);
+        const data = await response.json();
+        setMembros(data);
+      } catch (error) {
+        console.error('Erro ao buscar membros:', error);
+      }
+    };
+
+    fetchMembros();
+  }, [filtroTipo]);
+
+  // Buscar estatísticas
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('/api/team-members/stats');
+        const data = await response.json();
+        setStats(data);
+        setLoading(false);
+      } catch (error) {
+        console.error('Erro ao buscar estatísticas:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  const membrosFiltrados = useMemo(() => {
+    if (filtroTipo === 'TODOS') return membros;
+    return membros.filter(membro => membro.tipo === filtroTipo);
+  }, [membros, filtroTipo]);
+
+  if (loading) {
+    return <div>Carregando...</div>;
+  }
+
+  return (
+    <div className="space-y-6 p-6">
+      {/* Header com resumo */}
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold">Informações da Equipe</h1>
+          <p className="text-gray-600 mt-1">Gerencie membros da equipe e visualize suas atividades</p>
+          
+          {/* Resumo estatístico */}
+          <div className="flex gap-3 mt-4">
+            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+              🔧 {stats.tecnicos} Técnicos
+            </Badge>
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              💻 {stats.auxiliares} Auxiliares
+            </Badge>
+            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+              📝 {stats.elaboradores} Elaboradores
+            </Badge>
+            <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+              🏗️ {stats.campo} Campo
+            </Badge>
+          </div>
+        </div>
+        
+        <Button onClick={() => setModalAberto(true)} className="bg-blue-600 hover:bg-blue-700">
+          + Adicionar Membro
+        </Button>
+      </div>
+
+      {/* Filtros por tipo */}
+      <div className="flex gap-2">
+        {['TODOS', 'TECNICO', 'AUXILIAR', 'ELABORADOR', 'CAMPO'].map(tipo => (
+          <Button
+            key={tipo}
+            variant={filtroTipo === tipo ? 'default' : 'outline'}
+            onClick={() => setFiltroTipo(tipo)}
+            className={filtroTipo === tipo ? 'bg-blue-600' : ''}
+          >
+            {tipo === 'TODOS' ? 'Todos' : tipoConfig[tipo as keyof typeof tipoConfig]?.label || tipo}
+          </Button>
+        ))}
+      </div>
+
+      {/* Grid de membros */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {membrosFiltrados.map(membro => (
+          <TeamMemberCard key={membro.id} membro={membro} />
+        ))}
+      </div>
+
+      {/* Modal de adicionar membro */}
+      {modalAberto && (
+        <AddMemberModal 
+          onClose={() => setModalAberto(false)}
+          onSuccess={() => {
+            setModalAberto(false);
+            // Refresh data
+            window.location.reload();
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+// Componente do card do membro
+const TeamMemberCard = ({ membro }: { membro: TeamMember }) => {
+  const config = tipoConfig[membro.tipo];
+  
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'ATIVO': return 'bg-green-100 text-green-800';
+      case 'OCUPADO': return 'bg-yellow-100 text-yellow-800';
+      case 'AUSENTE': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  return (
+    <Card className={`${config.bg} border-l-4 border-l-${config.color}-500 hover:shadow-md transition-shadow`}>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="text-2xl">{config.icon}</div>
+          <Badge variant="outline" className={`text-xs ${getStatusColor(membro.status)}`}>
+            {membro.status}
+          </Badge>
+        </div>
+        <CardTitle className="text-lg">{membro.nome} {membro.sobrenome}</CardTitle>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="space-y-2">
+          <Badge variant="secondary" className={`bg-${config.color}-100 text-${config.color}-800`}>
+            {config.label}
+          </Badge>
+          <p className="text-sm text-gray-600">{membro.especialidade}</p>
+          <p className="text-sm text-gray-500">{membro.telefone}</p>
+          <Button variant="outline" size="sm" className="w-full mt-3">
+            Editar
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default TeamInformation;
+```
+
+### ETAPA 5: CRIAR NOVA PÁGINA ORDENS DE SERVIÇO
+
+**5.1 - Criar página work-orders.tsx**
+```tsx
+// Arquivo: client/src/pages/work-orders.tsx
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ChevronDown, Search } from 'lucide-react';
+
+interface WorkOrder {
+  workOrderNumber: string;
+  agencyName: string;
+  equipmentPrefix: string;
+  preventiveBudgetValue: string;
+  situationStatus: string;
+  executionStatus: string;
+  reportCreatorId?: number;
+  preventiveTechnicianId?: number;
+  scheduledDate?: string;
+}
+
+interface OrderAssignment {
+  elaboradorId?: number;
+  tecnicoCampoId?: number;
+  observacoes?: string;
+}
+
+const WorkOrders = () => {
+  const [ordens, setOrdens] = useState<WorkOrder[]>([]);
+  const [filteredOrdens, setFilteredOrdens] = useState<WorkOrder[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [elaboradores, setElaboradores] = useState<any[]>([]);
+  const [tecnicosCampo, setTecnicosCampo] = useState<any[]>([]);
+
+  // Buscar ordens de serviço
+  useEffect(() => {
+    const fetchOrdens = async () => {
+      try {
+        const response = await fetch('/api/preventive-maintenance-orders');
+        const data = await response.json();
+        setOrdens(data);
+        setFilteredOrdens(data);
+        setLoading(false);
+      } catch (error) {
+        console.error('Erro ao buscar ordens:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchOrdens();
+  }, []);
+
+  // Buscar elaboradores e técnicos de campo
+  useEffect(() => {
+    const fetchTeamMembers = async () => {
+      try {
+        const [elaboradoresRes, campoRes] = await Promise.all([
+          fetch('/api/team-members?tipo=ELABORADOR'),
+          fetch('/api/team-members?tipo=CAMPO')
+        ]);
+        
+        const elaboradoresData = await elaboradoresRes.json();
+        const campoData = await campoRes.json();
+        
+        setElaboradores(elaboradoresData);
+        setTecnicosCampo(campoData);
+      } catch (error) {
+        console.error('Erro ao buscar membros da equipe:', error);
+      }
+    };
+
+    fetchTeamMembers();
+  }, []);
+
+  // Filtrar ordens por busca
+  useEffect(() => {
+    const filtered = ordens.filter(ordem =>
+      ordem.workOrderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ordem.agencyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ordem.equipmentPrefix.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredOrdens(filtered);
+  }, [searchTerm, ordens]);
+
+  const handleAtribuirElaborador = async (ordem: WorkOrder, elaboradorId: number) => {
+    try {
+      const response = await fetch(`/api/order-assignments/${ordem.workOrderNumber}/assign-elaborador`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ elaboradorId })
+      });
+      
+      if (response.ok) {
+        alert('Elaborador atribuído com sucesso!');
+        // Refresh data
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Erro ao atribuir elaborador:', error);
+      alert('Erro ao atribuir elaborador');
+    }
+  };
+
+  const handleAtribuirCampo = async (ordem: WorkOrder, tecnicoCampoId: number) => {
+    try {
+      const response = await fetch(`/api/order-assignments/${ordem.workOrderNumber}/assign-campo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tecnicoCampoId })
+      });
+      
+      if (response.ok) {
+        alert('Técnico de campo atribuído com sucesso!');
+        // Refresh data
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Erro ao atribuir técnico de campo:', error);
+      alert('Erro ao atribuir técnico de campo');
+    }
+  };
+
+  const getStatusVariant = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'concluida': case 'executada': return 'bg-green-100 text-green-800';
+      case 'agendada': case 'em_andamento': return 'bg-blue-100 text-blue-800';
+      case 'pendente': return 'bg-yellow-100 text-yellow-800';
+      case 'vencida': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  if (loading) {
+    return <div className="p-6">Carregando ordens de serviço...</div>;
+  }
+
+  return (
+    <div className="space-y-6 p-6">
+      {/* Header */}
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold">Ordens de Serviço</h1>
+          <p className="text-gray-600 mt-1">Controle e gerenciamento de ordens de serviço</p>
+          <p className="text-sm text-blue-600 mt-1">Total: {filteredOrdens.length} ordens</p>
+        </div>
+        <Button className="bg-blue-600 hover:bg-blue-700">
+          + Nova Ordem
+        </Button>
+      </div>
+
+      {/* Filtros e busca */}
+      <div className="flex gap-4 items-center">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="🔍 Buscar ordens..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Button variant="outline">Status ▼</Button>
+        <Button variant="outline">Agência ▼</Button>
+        <Button variant="outline">Período ▼</Button>
+      </div>
+
+      {/* Tabela de ordens */}
+      <div className="bg-white rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>OS</TableHead>
+              <TableHead>Agência</TableHead>
+              <TableHead>Equipamento</TableHead>
+              <TableHead>Valor</TableHead>
+              <TableHead>Situação</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredOrdens.map((ordem) => (
+              <TableRow key={ordem.workOrderNumber} className="hover:bg-gray-50">
+                <TableCell className="font-medium">{ordem.workOrderNumber}</TableCell>
+                <TableCell>{ordem.agencyName}</TableCell>
+                <TableCell>{ordem.equipmentPrefix}</TableCell>
+                <TableCell>R$ {ordem.preventiveBudgetValue}</TableCell>
+                <TableCell>
+                  <Badge className={getStatusVariant(ordem.situationStatus)}>
+                    {ordem.situationStatus}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge className={getStatusVariant(ordem.executionStatus)}>
+                    {ordem.executionStatus}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <ActionsDropdown 
+                    ordem={ordem}
+                    elaboradores={elaboradores}
+                    tecnicosCampo={tecnicosCampo}
+                    onAtribuirElaborador={handleAtribuirElaborador}
+                    onAtribuirCampo={handleAtribuirCampo}
+                  />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {filteredOrdens.length === 0 && (
+        <div className="text-center py-8 text-gray-500">
+          <p>Nenhuma ordem de serviço encontrada</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Componente dropdown de ações
+const ActionsDropdown = ({ 
+  ordem, 
+  elaboradores, 
+  tecnicosCampo, 
+  onAtribuirElaborador, 
+  onAtribuirCampo 
+}: {
+  ordem: WorkOrder;
+  elaboradores: any[];
+  tecnicosCampo: any[];
+  onAtribuirElaborador: (ordem: WorkOrder, elaboradorId: number) => void;
+  onAtribuirCampo: (ordem: WorkOrder, tecnicoCampoId: number) => void;
+}) => {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm">
+          Ações <ChevronDown className="h-4 w-4 ml-1" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        {/* Submenu Elaboradores */}
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex w-full items-center px-2 py-1.5 text-sm hover:bg-gray-100 rounded">
+            👤 Atribuir Elaborador
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="left" className="w-48">
+            {elaboradores.map(elaborador => (
+              <DropdownMenuItem 
+                key={elaborador.id}
+                onClick={() => onAtribuirElaborador(ordem, elaborador.id)}
+              >
+                {elaborador.nome} {elaborador.sobrenome}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Submenu Técnicos de Campo */}
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex w-full items-center px-2 py-1.5 text-sm hover:bg-gray-100 rounded">
+            🏗️ Atribuir Téc. Campo
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="left" className="w-48">
+            {tecnicosCampo.map(tecnico => (
+              <DropdownMenuItem 
+                key={tecnico.id}
+                onClick={() => onAtribuirCampo(ordem, tecnico.id)}
+              >
+                {tecnico.nome} {tecnico.sobrenome}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenuSeparator />
+        
+        <DropdownMenuItem>
+          ✏️ Editar Ordem
+        </DropdownMenuItem>
+        <DropdownMenuItem>
+          👁️ Ver Detalhes
+        </DropdownMenuItem>
+        
+        <DropdownMenuSeparator />
+        
+        <DropdownMenuItem>
+          📄 Gerar Relatório
+        </DropdownMenuItem>
+        <DropdownMenuItem className="text-red-600">
+          🗑️ Remover
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+export default WorkOrders;
+```
+
+### ETAPA 6: ATUALIZAR ROTEAMENTO
+
+**6.1 - Atualizar App.tsx ou router**
+```tsx
+// Arquivo: client/src/App.tsx (ou router.tsx)
+import WorkOrders from './pages/work-orders';
+
+// Adicionar nova rota:
+<Route path="/work-orders" element={<WorkOrders />} />
+```
+
+**6.2 - Atualizar Sidebar**
+```tsx
+// Arquivo: client/src/components/Sidebar.tsx
+// Adicionar novo item:
+{
+  name: 'Ordens de Serviço',
+  href: '/work-orders',
+  icon: '📋'
+}
+```
+
+### ETAPA 7: REGISTRAR ROTAS NO BACKEND
+
+**7.1 - Atualizar server/src/index.ts**
+```typescript
+// Arquivo: server/src/index.ts
+import { teamMembersRouter } from './routes/team-members';
+import { orderAssignmentsRouter } from './routes/order-assignments';
+
+// Registrar rotas:
+app.use('/api/team-members', teamMembersRouter);
+app.use('/api/order-assignments', orderAssignmentsRouter);
+```
+
+---
+
+## 🧪 TESTES E VALIDAÇÃO
+
+### TESTE 1: Verificar tipos de membros
+1. Acessar `/team` 
+2. Verificar filtros funcionando
+3. Testar adição de novo membro tipo ELABORADOR
+4. Testar adição de novo membro tipo CAMPO
+
+### TESTE 2: Verificar nova página de ordens
+1. Acessar `/work-orders`
+2. Verificar listagem das ordens
+3. Testar dropdown de ações
+4. Testar atribuição de elaborador
+5. Testar atribuição de técnico de campo
+
+### TESTE 3: Verificar integração
+1. Atribuir elaborador/técnico a uma ordem
+2. Verificar se dados ficam salvos no banco
+3. Verificar se aparecem na interface
+
+---
+
+## ✅ CHECKLIST DE FINALIZAÇÃO
+
+- [ ] Migrations executadas no banco
+- [ ] Schemas Drizzle atualizados
+- [ ] APIs backend funcionando
+- [ ] Página de equipe expandida
+- [ ] Nova página ordens criada
+- [ ] Roteamento atualizado
+- [ ] Sidebar atualizada
+- [ ] Testes realizados
+- [ ] Sistema funcionando completamente
+
+---
+
+**EXECUTE ESSAS ETAPAS SEQUENCIALMENTE. NÃO PULE NENHUMA ETAPA. TESTE CADA FUNCIONALIDADE ANTES DE PROSSEGUIR.**
