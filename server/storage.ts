@@ -114,6 +114,10 @@ export interface IStorage {
   getMonthlyTrends(months?: number): Promise<MonthlyTrend[]>;
   getPriorityDistribution(filters?: any): Promise<Record<string, number>>;
 
+  // TV Mode specific operations
+  getCriticalMaintenanceOrders(): Promise<any[]>;
+  getMaintenanceSchedule(days?: number): Promise<any[]>;
+
   // Team Member operations
   getTeamMembers(tipo?: string, status?: string): Promise<User[]>;
   getTeamMember(id: string): Promise<User | undefined>;
@@ -1197,6 +1201,144 @@ export class DatabaseStorage implements IStorage {
         message: 'Erro ao zerar dados do sistema. Verifique os logs para mais detalhes.',
         cleared: []
       };
+    }
+  }
+
+  // TV Mode specific methods
+  async getCriticalMaintenanceOrders(): Promise<any[]> {
+    try {
+      // Busca OS críticas baseadas em critérios como data vencida, alta prioridade, etc.
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - 1); // OS vencidas há mais de 1 dia
+
+      // OS Preventivas vencidas ou urgentes
+      const criticalPreventive = await db
+        .select()
+        .from(preventiveMaintenanceOrders)
+        .where(
+          and(
+            lte(preventiveMaintenanceOrders.dataExecucaoPrevista, cutoffDate.toISOString().split('T')[0]),
+            eq(preventiveMaintenanceOrders.situacao, 'PENDENTE')
+          )
+        )
+        .limit(20);
+
+      // Ordens de trabalho críticas
+      const criticalWorkOrders = await db
+        .select()
+        .from(workOrders)
+        .where(
+          and(
+            lte(workOrders.scheduledDate, cutoffDate),
+            eq(workOrders.priority, 'high')
+          )
+        )
+        .limit(10);
+
+      // Combina e formata os dados para o modo TV
+      const combined = [
+        ...criticalPreventive.map(order => ({
+          id: order.id,
+          titulo: order.numero || `Manutenção ${order.id}`,
+          descricao: order.descricao || 'Manutenção preventiva',
+          dueDate: new Date(order.dataExecucaoPrevista).toISOString(),
+          priority: order.situacao === 'VENCIDA' ? 'critical' : 'high',
+          technician: order.responsavel,
+          location: order.local || 'Não especificado',
+          equipment: order.equipamento || 'Equipamento não especificado',
+          status: order.situacao === 'VENCIDA' ? 'vencida' : 'pendente',
+          impactLevel: 'high',
+          requiresImmediate: order.situacao === 'VENCIDA'
+        })),
+        ...criticalWorkOrders.map(order => ({
+          id: order.id,
+          titulo: order.title,
+          descricao: order.description,
+          dueDate: order.scheduledDate?.toISOString() || new Date().toISOString(),
+          priority: order.priority === 'high' ? 'urgent' : 'medium',
+          technician: 'Não atribuído',
+          location: order.location || 'Não especificado',
+          equipment: 'Equipamento relacionado',
+          status: order.scheduledDate && order.scheduledDate < new Date() ? 'vencida' : 'urgente',
+          impactLevel: order.priority === 'high' ? 'high' : 'medium',
+          requiresImmediate: order.priority === 'high'
+        }))
+      ];
+
+      return combined.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+    } catch (error) {
+      console.error('Error fetching critical maintenance orders:', error);
+      return [];
+    }
+  }
+
+  async getMaintenanceSchedule(days: number = 7): Promise<any[]> {
+    try {
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + days);
+
+      // OS Preventivas agendadas para os próximos dias
+      const scheduledPreventive = await db
+        .select()
+        .from(preventiveMaintenanceOrders)
+        .where(
+          and(
+            gte(preventiveMaintenanceOrders.dataExecucaoPrevista, startDate.toISOString().split('T')[0]),
+            lte(preventiveMaintenanceOrders.dataExecucaoPrevista, endDate.toISOString().split('T')[0])
+          )
+        )
+        .orderBy(preventiveMaintenanceOrders.dataExecucaoPrevista)
+        .limit(50);
+
+      // Ordens de trabalho agendadas
+      const scheduledWorkOrders = await db
+        .select()
+        .from(workOrders)
+        .where(
+          and(
+            gte(workOrders.scheduledDate, startDate),
+            lte(workOrders.scheduledDate, endDate)
+          )
+        )
+        .orderBy(workOrders.scheduledDate)
+        .limit(30);
+
+      // Formata os dados para o modo TV
+      const schedule = [
+        ...scheduledPreventive.map(order => ({
+          id: order.id,
+          titulo: order.numero || `Manutenção Preventiva ${order.id}`,
+          descricao: order.descricao || 'Manutenção preventiva',
+          scheduledDate: new Date(order.dataExecucaoPrevista + 'T08:00:00').toISOString(), // Assume 8:00 AM
+          technician: order.responsavel || 'Não atribuído',
+          location: order.local || 'Local não especificado',
+          priority: order.situacao === 'URGENTE' ? 'high' : 'medium',
+          estimatedDuration: 2, // Default 2 horas
+          status: order.situacao?.toLowerCase() || 'agendada',
+          equipment: order.equipamento || 'Equipamento não especificado'
+        })),
+        ...scheduledWorkOrders.map(order => ({
+          id: order.id,
+          titulo: order.title,
+          descricao: order.description,
+          scheduledDate: order.scheduledDate?.toISOString() || new Date().toISOString(),
+          technician: 'Técnico a ser definido',
+          location: order.location || 'Local não especificado',
+          priority: order.priority || 'medium',
+          estimatedDuration: 3, // Default 3 horas
+          status: 'agendada',
+          equipment: 'Equipamento relacionado'
+        }))
+      ];
+
+      // Ordena por data de agendamento
+      return schedule.sort((a, b) => 
+        new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime()
+      );
+    } catch (error) {
+      console.error('Error fetching maintenance schedule:', error);
+      return [];
     }
   }
 }

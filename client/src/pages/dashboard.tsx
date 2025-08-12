@@ -14,13 +14,15 @@ import {
   Users,
   AlertTriangle,
   Activity,
-  Plus
+  Plus,
+  Monitor
 } from "lucide-react";
 import MetricsGrid from "@/components/dashboard/MetricsGrid";
 import StatusChart from "@/components/dashboard/StatusChart";
 import TechnicianPerformance from "@/components/dashboard/TechnicianPerformance";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import TrendChart from "@/components/dashboard/TrendChart";
+import TVModeContainer from "@/components/tv/TVModeContainer";
 import type { ActivityItem } from "@shared/schema";
 
 interface DashboardMetrics {
@@ -55,6 +57,7 @@ interface MonthlyTrend {
 
 
 export default function Dashboard() {
+  const [showTVMode, setShowTVMode] = useState(false);
   const [tvMode, setTvMode] = useState(false);
 
   const { data: metrics, isLoading: metricsLoading } = useQuery<DashboardMetrics>({
@@ -77,6 +80,11 @@ export default function Dashboard() {
     queryKey: ["/api/dashboard/monthly-trends"],
   });
 
+  // Se modo TV está ativo, renderiza o container de TV
+  if (showTVMode) {
+    return <TVModeContainer />;
+  }
+
   return (
     <div className={`space-y-8 ${tvMode ? 'tv-mode' : ''}`}>
         {/* Header */}
@@ -91,10 +99,10 @@ export default function Dashboard() {
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => setTvMode(!tvMode)}
+              onClick={() => setShowTVMode(!showTVMode)}
             >
-              <LayoutDashboard className="h-4 w-4 mr-2" />
-              {tvMode ? 'Modo Normal' : 'Modo TV'}
+              <Monitor className="h-4 w-4 mr-2" />
+              {showTVMode ? 'Modo Normal' : 'Modo TV'}
             </Button>
           </div>
         </div>
