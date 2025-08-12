@@ -39,6 +39,18 @@ Intelligent Work Order Management Dashboard designed for engineering teams, feat
 
 ## Recent Changes (Janeiro 2025)
 
+### 📊 Dashboard Charts Optimization & Import Modal Fix (Janeiro 11, 2025)
+**OBJETIVO CONCLUÍDO**: Otimização dos gráficos do dashboard para preenchimento completo dos cards e correção do modal de importação na página de Ordens de Serviço.
+
+#### ✅ Implementações Realizadas:
+- ✅ Otimizados todos os components de gráficos (StatusChart, TrendChart, TechnicianPerformance, RecentActivity) para usar altura completa
+- ✅ Aplicado layout flexbox nos cards para eliminação de espaços vazios
+- ✅ Aumentado tamanho dos gráficos (pizza: innerRadius 65, outerRadius 120)
+- ✅ Corrigido roteamento: mudado de SimpleWorkOrders para WorkOrders na rota /work-orders
+- ✅ Modal de importação Excel agora funcional na página correta de Ordens de Serviço
+- ✅ Validação de arquivos Excel (.xlsx, .xls) com feedback visual
+- ✅ Integração completa com API /api/work-orders/import
+
 ### 🧰 Auxiliares Implementation (Janeiro 11, 2025)
 **OBJETIVO CONCLUÍDO**: Implementação completa do sistema de auxiliares no CMMS MAFFENG, integrando auxiliares com todas as funcionalidades existentes.
 
