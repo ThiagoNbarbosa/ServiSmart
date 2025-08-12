@@ -38,7 +38,7 @@ function Router() {
             <Route path="/" component={Dashboard} />
             <Route path="/team" component={TeamInformation} />
             <Route path="/users" component={UserManagement} />
-            <Route path="/work-orders" component={SimpleWorkOrders} />
+            <Route path="/work-orders" component={WorkOrders} />
             <Route path="/preventive-maintenance" component={PreventiveMaintenance} />
             <Route path="/profile" component={UserProfile} />
             <Route path="/management" component={Management} />
