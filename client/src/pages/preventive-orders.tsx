@@ -61,6 +61,9 @@ export default function PreventiveOrders() {
   const [file, setFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [showMapping, setShowMapping] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -69,11 +72,42 @@ export default function PreventiveOrders() {
     queryKey: ['/api/preventive-maintenance-orders'],
   });
 
-  // Import mutation
-  const importMutation = useMutation({
+  // Analysis mutation
+  const analysisMutation = useMutation({
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append('file', file);
+      return apiRequest(`/api/preventive-maintenance-orders/analyze`, {
+        method: 'POST',
+        body: formData,
+      });
+    },
+    onSuccess: (data) => {
+      setAnalysis(data);
+      setShowMapping(true);
+      toast({
+        title: "Análise Concluída",
+        description: `Encontrados ${data.headers.length} colunas e ${data.totalRows} linhas de dados.`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro na Análise",
+        description: error.details || "Erro ao analisar arquivo Excel",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Import mutation
+  const importMutation = useMutation({
+    mutationFn: async ({ file, mapping }: { file: File; mapping?: any }) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      if (mapping) {
+        formData.append('columnMapping', JSON.stringify(mapping));
+        formData.append('headerRow', '1');
+      }
       return apiRequest(`/api/preventive-maintenance-orders/import`, {
         method: 'POST',
         body: formData,
@@ -87,6 +121,8 @@ export default function PreventiveOrders() {
       queryClient.invalidateQueries({ queryKey: ['/api/preventive-maintenance-orders'] });
       setImportDialogOpen(false);
       setFile(null);
+      setAnalysis(null);
+      setShowMapping(false);
     },
     onError: (error: any) => {
       toast({
@@ -101,10 +137,28 @@ export default function PreventiveOrders() {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
+      setAnalysis(null);
+      setShowMapping(false);
     }
   };
 
-  const handleImport = () => {
+  const handleAnalyze = () => {
+    if (!file) {
+      toast({
+        title: "Nenhum Arquivo",
+        description: "Selecione um arquivo Excel para analisar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setAnalyzing(true);
+    analysisMutation.mutate(file, {
+      onSettled: () => setAnalyzing(false)
+    });
+  };
+
+  const handleImport = (useMapping = false) => {
     if (!file) {
       toast({
         title: "Nenhum Arquivo",
@@ -115,7 +169,12 @@ export default function PreventiveOrders() {
     }
 
     setImporting(true);
-    importMutation.mutate(file, {
+    const importData = {
+      file,
+      mapping: useMapping && analysis ? analysis.suggestedMapping : undefined
+    };
+    
+    importMutation.mutate(importData, {
       onSettled: () => setImporting(false)
     });
   };
@@ -178,44 +237,111 @@ export default function PreventiveOrders() {
                   </div>
                 )}
               </div>
+
+              {file && !showMapping && (
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleAnalyze} 
+                    disabled={analyzing}
+                    className="flex-1"
+                  >
+                    {analyzing ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-foreground" />
+                        Analisando...
+                      </>
+                    ) : (
+                      <>
+                        <Search className="mr-2 h-4 w-4" />
+                        Analisar Estrutura
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    onClick={() => handleImport(false)} 
+                    disabled={importing}
+                    className="flex-1"
+                  >
+                    {importing ? "Importando..." : "Importar Diretamente"}
+                  </Button>
+                </div>
+              )}
+
+              {showMapping && analysis && (
+                <div className="space-y-3">
+                  <div className="text-sm">
+                    <div className="font-medium text-green-600 mb-2">
+                      ✓ Análise Concluída: {analysis.headers.length} colunas encontradas
+                    </div>
+                    
+                    <div className="bg-muted p-3 rounded-md space-y-2">
+                      <div className="font-medium">Colunas Identificadas:</div>
+                      <div className="grid grid-cols-2 gap-1 text-xs">
+                        {analysis.headers.map((header: string, index: number) => (
+                          <div key={index} className="truncate">
+                            {index + 1}: {header}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {analysis.sampleRows.length > 0 && (
+                      <div className="bg-muted p-3 rounded-md mt-2">
+                        <div className="font-medium mb-2">Amostra de Dados:</div>
+                        <div className="text-xs space-y-1">
+                          {analysis.sampleRows.slice(0, 2).map((row: any[], rowIndex: number) => (
+                            <div key={rowIndex} className="truncate">
+                              Linha {rowIndex + 1}: {row.slice(0, 4).join(' | ')}...
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
               
               <div className="text-sm text-muted-foreground space-y-2">
-                <p className="font-medium">Formato esperado da planilha PREVENTIVAS:</p>
-                <div className="grid grid-cols-1 gap-1 text-xs">
-                  <div>• Coluna A: ELABORADOR DE RELATÓRIO</div>
-                  <div>• Coluna B: DATA LEVANTAMENTO</div>
-                  <div>• Coluna C: CONTRATO</div>
-                  <div>• Coluna D: OS (obrigatório)</div>
-                  <div>• Coluna E: PREFIXO</div>
-                  <div>• Coluna F: AGÊNCIA (obrigatório)</div>
-                  <div>• Coluna G: VALOR PREVENTIVA ORÇAMENTO</div>
-                  <div>• Coluna H: VENCIMENTO PORTAL</div>
-                  <div>• Coluna I: SITUAÇÃO</div>
-                  <div>• Coluna J: TÉCNICO PREVENTIVA</div>
-                  <div>• Coluna K: DATA AGENDAMENTO</div>
-                  <div>• Coluna L: DIFICULDADES</div>
-                  <div>• Coluna M: STATUS</div>
+                <p className="font-medium">💡 Dica: Sistema Inteligente de Importação</p>
+                <div className="text-xs bg-blue-50 p-2 rounded">
+                  <div>• O sistema detecta automaticamente as colunas da sua planilha</div>
+                  <div>• Funciona mesmo com planilhas fora do padrão</div>
+                  <div>• Use "Analisar Estrutura" para verificar se as colunas foram detectadas corretamente</div>
+                  <div>• Campos obrigatórios: OS e Agência</div>
                 </div>
               </div>
             </div>
             
             <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setImportDialogOpen(false)}>
+              <Button variant="outline" onClick={() => {
+                setImportDialogOpen(false);
+                setAnalysis(null);
+                setShowMapping(false);
+                setFile(null);
+              }}>
                 Cancelar
               </Button>
-              <Button onClick={handleImport} disabled={!file || importing}>
-                {importing ? (
-                  <>
-                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-foreground" />
-                    Importando...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Importar
-                  </>
-                )}
-              </Button>
+              
+              {showMapping && analysis ? (
+                <Button 
+                  onClick={() => handleImport(true)} 
+                  disabled={importing}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {importing ? (
+                    <>
+                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-foreground" />
+                      Importando...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="mr-2 h-4 w-4" />
+                      Confirmar Importação
+                    </>
+                  )}
+                </Button>
+              ) : null}
             </div>
           </DialogContent>
         </Dialog>

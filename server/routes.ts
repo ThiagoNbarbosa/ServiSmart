@@ -9,6 +9,7 @@ import { distributionService } from "./distributionService";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { importPatternData } from './patternImporter';
 import { analyzeExcelStructure, suggestColumnMapping } from './excelAnalyzer';
+import { FlexibleExcelReader } from './excelFlexReader';
 import { insertWorkOrderSchema, insertChatMessageSchema, insertNotificationSchema, insertTeamMemberSchema } from "@shared/schema";
 
 const upload = multer({ 
@@ -1303,47 +1304,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Import Preventive Maintenance Orders from Excel
+  // Analyze Excel structure for flexible import
+  app.post('/api/preventive-maintenance-orders/analyze', upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'Nenhum arquivo foi enviado' });
+      }
+
+      const analysis = await FlexibleExcelReader.analyzeExcel(req.file.buffer);
+      res.json(analysis);
+    } catch (error) {
+      console.error('Error analyzing Excel file:', error);
+      res.status(500).json({ 
+        error: 'Erro ao analisar planilha Excel',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
+  // Import Preventive Maintenance Orders from Excel with flexible mapping
   app.post('/api/preventive-maintenance-orders/import', upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: 'Nenhum arquivo foi enviado' });
       }
 
-      const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(req.file.buffer);
-      const worksheet = workbook.getWorksheet(1);
-
-      if (!worksheet) {
-        return res.status(400).json({ error: 'Planilha não encontrada' });
+      // Get column mapping from request body
+      const { columnMapping, headerRow } = req.body;
+      
+      let mappedData;
+      
+      if (columnMapping) {
+        // Use provided column mapping
+        const mapping = JSON.parse(columnMapping);
+        mappedData = await FlexibleExcelReader.readWithMapping(req.file.buffer, mapping, parseInt(headerRow) || 1);
+      } else {
+        // Try automatic analysis and mapping
+        const analysis = await FlexibleExcelReader.analyzeExcel(req.file.buffer);
+        mappedData = await FlexibleExcelReader.readWithMapping(req.file.buffer, analysis.suggestedMapping, 1);
       }
 
       const importedOrders: any[] = [];
       const errors: string[] = [];
 
-      // Skip header row, start from row 2
-      for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
-        const row = worksheet.getRow(rowNumber);
-        
-        // Skip empty rows
-        if (!row.hasValues) continue;
+      for (let i = 0; i < mappedData.length; i++) {
+        const rowData = mappedData[i];
+        const rowNumber = i + 2; // Account for header row
 
         try {
-          // Map Excel columns to database fields according to the specification
+          // Normalize and validate data
           const orderData = {
-            reportCreator: row.getCell(1).value?.toString() || '', // A: ELABORADOR DE RELATÓRIO
-            surveyDate: parseExcelDate(row.getCell(2).value), // B: DATA LEVANTAMENTO
-            contractNumber: row.getCell(3).value?.toString() || '', // C: CONTRATO
-            workOrderNumber: row.getCell(4).value?.toString() || '', // D: OS
-            equipmentPrefix: row.getCell(5).value?.toString() || '', // E: PREFIXO
-            agencyName: row.getCell(6).value?.toString() || '', // F: AGÊNCIA
-            preventiveBudgetValue: parseFloat(row.getCell(7).value?.toString() || '0'), // G: VALOR PREVENTIVA ORÇAMENTO
-            portalDeadline: parseExcelDate(row.getCell(8).value), // H: VENCIMENTO PORTAL
-            situationStatus: normalizeSituationStatus(row.getCell(9).value?.toString() || ''), // I: SITUAÇÃO
-            preventiveTechnician: row.getCell(10).value?.toString() || '', // J: TÉCNICO PREVENTIVA
-            scheduledDate: parseExcelDate(row.getCell(11).value), // K: DATA AGENDAMENTO
-            difficultiesNotes: row.getCell(12).value?.toString() || '', // L: DIFICULDADES
-            executionStatus: normalizeExecutionStatus(row.getCell(13).value?.toString() || ''), // M: STATUS
+            reportCreatorId: null, // Will need to map names to IDs
+            surveyDate: rowData.surveyDate || null,
+            contractNumber: rowData.contractNumber || null,
+            workOrderNumber: rowData.workOrderNumber || '',
+            equipmentPrefix: rowData.equipmentPrefix || null,
+            agencyName: rowData.agencyName || '',
+            preventiveBudgetValue: (rowData.preventiveBudgetValue || 0).toString(),
+            portalDeadline: rowData.portalDeadline || null,
+            situationStatus: FlexibleExcelReader.normalizeStatus(rowData.situationStatus || '', 'situation'),
+            preventiveTechnicianId: null, // Will need to map names to IDs
+            scheduledDate: rowData.scheduledDate || null,
+            scheduledStatus: 'AGENDADO',
+            difficultiesNotes: rowData.difficultiesNotes || null,
+            executionStatus: FlexibleExcelReader.normalizeStatus(rowData.executionStatus || '', 'execution')
           };
 
           // Validate required fields
@@ -1377,7 +1401,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         imported: results.length,
         total: importedOrders.length,
-        errors: errors.length > 0 ? errors : undefined
+        errors: errors.length > 0 ? errors : undefined,
+        preview: results.slice(0, 3) // Show first 3 for confirmation
       });
 
     } catch (error) {
