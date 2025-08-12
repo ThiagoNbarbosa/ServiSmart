@@ -698,6 +698,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate request body
       const validatedData = insertTeamMemberSchema.parse(req.body);
       
+      // Check if email already exists if provided
+      if (validatedData.email) {
+        const existingUser = await storage.getUserByEmail(validatedData.email);
+        if (existingUser) {
+          return res.status(409).json({ 
+            message: "Email já está em uso por outro usuário",
+            field: "email"
+          });
+        }
+      }
+      
       const memberData = {
         ...validatedData,
         id: `team-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -712,7 +723,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof Error && error.name === 'ZodError') {
         return res.status(400).json({ message: "Dados inválidos", details: error.message });
       }
-      res.status(500).json({ message: "Failed to create team member" });
+      
+      // Handle database constraint errors
+      if (error.code === '23505') {
+        if (error.constraint === 'users_email_unique') {
+          return res.status(409).json({ 
+            message: "Email já está em uso por outro usuário",
+            field: "email"
+          });
+        }
+      }
+      
+      res.status(500).json({ message: "Falha ao criar membro da equipe" });
     }
   });
 
