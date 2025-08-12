@@ -57,6 +57,11 @@ const navigationItems: NavigationItem[] = [
     icon: Calendar,
   },
   {
+    href: "/preventive-orders",
+    label: "Ordens Preventivas",
+    icon: ClipboardList,
+  },
+  {
     href: "/team",
     label: "Equipe",
     icon: Users,
