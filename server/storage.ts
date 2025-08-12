@@ -15,6 +15,7 @@ import {
   systemConfig,
   auxiliares,
   preventiveMaintenanceOrders,
+  orderAssignments,
   type User,
   type UpsertUser,
   type InsertTechnician,
@@ -51,6 +52,8 @@ import {
   type InsertAuxiliar,
   type PreventiveMaintenanceOrder,
   type InsertPreventiveMaintenanceOrder,
+  type OrderAssignment,
+  type InsertOrderAssignment,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, lte, sql, count, avg, sum } from "drizzle-orm";
@@ -111,11 +114,17 @@ export interface IStorage {
   getPriorityDistribution(filters?: any): Promise<Record<string, number>>;
 
   // Team Member operations
-  getTeamMembers(): Promise<User[]>;
+  getTeamMembers(tipo?: string, status?: string): Promise<User[]>;
   getTeamMember(id: string): Promise<User | undefined>;
   createTeamMember(userData: UpsertUser): Promise<User>;
   updateTeamMember(id: string, userData: Partial<UpsertUser>): Promise<User>;
   deleteTeamMember(id: string): Promise<void>;
+  getTeamMemberStats(): Promise<any>;
+
+  // Order Assignment operations
+  assignElaborador(orderNumber: string, elaboradorId: string, observacoes?: string): Promise<any>;
+  assignTecnicoCampo(orderNumber: string, tecnicoCampoId: string, observacoes?: string): Promise<any>;
+  getOrderAssignment(orderNumber: string): Promise<any>;
 
   // Asset operations
   getAssets(): Promise<Asset[]>;
@@ -679,13 +688,115 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Team management operations
-  async getTeamMembers(): Promise<User[]> {
-    return await db.select().from(users).where(eq(users.showInTeam, true));
+  async getTeamMembers(tipo?: string, status?: string): Promise<User[]> {
+    let query = db.select().from(users).where(eq(users.showInTeam, true));
+    
+    if (tipo && tipo !== 'TODOS') {
+      query = query.where(and(eq(users.showInTeam, true), eq(users.userLevel, tipo)));
+    }
+    
+    if (status) {
+      query = query.where(and(eq(users.showInTeam, true), eq(users.isActive, status === 'ATIVO')));
+    }
+    
+    return await query;
   }
 
   async getTeamMember(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
+  }
+
+  async getTeamMemberStats(): Promise<any> {
+    const members = await db.select().from(users).where(eq(users.showInTeam, true));
+    
+    const stats = {
+      tecnicos: members.filter(m => m.userLevel === 'TECHNICIAN').length,
+      auxiliares: members.filter(m => m.userLevel === 'AUXILIAR').length,
+      elaboradores: members.filter(m => m.userLevel === 'ELABORADOR').length,
+      campo: members.filter(m => m.userLevel === 'CAMPO').length,
+      total: members.length
+    };
+    
+    return stats;
+  }
+
+  // Order assignment operations
+  async assignElaborador(orderNumber: string, elaboradorId: string, observacoes?: string): Promise<OrderAssignment> {
+    // Check if assignment already exists
+    const [existingAssignment] = await db
+      .select()
+      .from(orderAssignments)
+      .where(eq(orderAssignments.workOrderNumber, orderNumber));
+
+    if (existingAssignment) {
+      // Update existing assignment
+      const [updated] = await db
+        .update(orderAssignments)
+        .set({ 
+          elaboradorId, 
+          observacoes, 
+          dataAtribuicao: new Date(),
+          updatedAt: new Date() 
+        })
+        .where(eq(orderAssignments.workOrderNumber, orderNumber))
+        .returning();
+      return updated;
+    } else {
+      // Create new assignment
+      const [newAssignment] = await db
+        .insert(orderAssignments)
+        .values({
+          workOrderNumber: orderNumber,
+          elaboradorId,
+          observacoes,
+        })
+        .returning();
+      return newAssignment;
+    }
+  }
+
+  async assignTecnicoCampo(orderNumber: string, tecnicoCampoId: string, observacoes?: string): Promise<OrderAssignment> {
+    // Check if assignment already exists
+    const [existingAssignment] = await db
+      .select()
+      .from(orderAssignments)
+      .where(eq(orderAssignments.workOrderNumber, orderNumber));
+
+    if (existingAssignment) {
+      // Update existing assignment
+      const [updated] = await db
+        .update(orderAssignments)
+        .set({ 
+          tecnicoCampoId, 
+          observacoes, 
+          dataAtribuicao: new Date(),
+          updatedAt: new Date() 
+        })
+        .where(eq(orderAssignments.workOrderNumber, orderNumber))
+        .returning();
+      return updated;
+    } else {
+      // Create new assignment
+      const [newAssignment] = await db
+        .insert(orderAssignments)
+        .values({
+          workOrderNumber: orderNumber,
+          tecnicoCampoId,
+          observacoes,
+        })
+        .returning();
+      return newAssignment;
+    }
+  }
+
+  async getOrderAssignment(orderNumber: string): Promise<OrderAssignment | null> {
+    const [assignment] = await db
+      .select()
+      .from(orderAssignments)
+      .where(eq(orderAssignments.workOrderNumber, orderNumber));
+    
+    return assignment || null;
   }
 
   async createTeamMember(userData: UpsertUser): Promise<User> {

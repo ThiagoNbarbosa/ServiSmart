@@ -649,11 +649,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Team management endpoints
   app.get("/api/team/members", devAuthMiddleware, async (req, res) => {
     try {
-      const members = await storage.getTeamMembers();
+      const { tipo, status } = req.query;
+      const members = await storage.getTeamMembers(tipo as string, status as string);
       res.json(members);
     } catch (error) {
       console.error("Error fetching team members:", error);
       res.status(500).json({ message: "Failed to fetch team members" });
+    }
+  });
+
+  // Team statistics endpoint
+  app.get("/api/team/members/stats", devAuthMiddleware, async (req, res) => {
+    try {
+      const stats = await storage.getTeamMemberStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching team stats:", error);
+      res.status(500).json({ message: "Failed to fetch team stats" });
     }
   });
 
@@ -727,6 +739,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting team member:", error);
       res.status(500).json({ message: "Failed to delete team member" });
+    }
+  });
+
+  // Order assignment endpoints
+  app.post("/api/order-assignments/:orderNumber/assign-elaborador", devAuthMiddleware, async (req, res) => {
+    try {
+      const { orderNumber } = req.params;
+      const { elaboradorId, observacoes } = req.body;
+      
+      const assignment = await storage.assignElaborador(orderNumber, elaboradorId, observacoes);
+      res.json(assignment);
+    } catch (error) {
+      console.error("Error assigning elaborador:", error);
+      res.status(500).json({ message: "Failed to assign elaborador" });
+    }
+  });
+
+  app.post("/api/order-assignments/:orderNumber/assign-campo", devAuthMiddleware, async (req, res) => {
+    try {
+      const { orderNumber } = req.params;
+      const { tecnicoCampoId, observacoes } = req.body;
+      
+      const assignment = await storage.assignTecnicoCampo(orderNumber, tecnicoCampoId, observacoes);
+      res.json(assignment);
+    } catch (error) {
+      console.error("Error assigning tecnico campo:", error);
+      res.status(500).json({ message: "Failed to assign tecnico campo" });
+    }
+  });
+
+  app.get("/api/order-assignments/:orderNumber", devAuthMiddleware, async (req, res) => {
+    try {
+      const { orderNumber } = req.params;
+      const assignment = await storage.getOrderAssignment(orderNumber);
+      res.json(assignment);
+    } catch (error) {
+      console.error("Error fetching order assignment:", error);
+      res.status(500).json({ message: "Failed to fetch order assignment" });
     }
   });
 
