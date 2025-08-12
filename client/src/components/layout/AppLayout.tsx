@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   LayoutDashboard, 
   Users, 
-  ClipboardList, 
+  Wrench, 
   BarChart3, 
   Settings, 
   HelpCircle, 
@@ -25,8 +25,7 @@ import {
   User,
   Moon,
   Sun,
-  Search,
-  Calendar
+  Search
 } from "lucide-react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -47,19 +46,9 @@ const navigationItems: NavigationItem[] = [
     icon: LayoutDashboard,
   },
   {
-    href: "/work-orders", 
-    label: "Ordens de Serviço",
-    icon: ClipboardList,
-  },
-  {
-    href: "/preventive-maintenance",
-    label: "Manutenção Preventiva",
-    icon: Calendar,
-  },
-  {
-    href: "/preventive-orders",
-    label: "Ordens Preventivas",
-    icon: ClipboardList,
+    href: "/maintenance",
+    label: "Manutenção",
+    icon: Wrench,
   },
   {
     href: "/team",
