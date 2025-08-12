@@ -5,14 +5,15 @@ import {
   Users, 
   FileText, 
   Settings,
-  ClipboardList
+  Wrench
 } from "lucide-react";
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Ordens de Serviço', href: '/work-orders', icon: ClipboardList },
+  { name: 'Manutenção', href: '/maintenance', icon: Wrench },
   { name: 'Equipe', href: '/team', icon: Users },
-  { name: 'Usuários', href: '/users', icon: Settings },
+  { name: 'Relatórios', href: '/reports', icon: FileText },
+  { name: 'Gestão', href: '/management', icon: Settings },
 ];
 
 export default function Navigation() {
