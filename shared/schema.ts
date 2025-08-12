@@ -35,7 +35,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  userLevel: varchar("user_level").notNull().default("TECHNICIAN"), // DEV, CONTRACT_MANAGER, REPORT_ELABORATOR, SUPERVISOR, ADMIN, TECHNICIAN, AUXILIAR
+  userLevel: varchar("user_level").notNull().default("TECHNICIAN"), // DEV, CONTRACT_MANAGER, REPORT_ELABORATOR, SUPERVISOR, ADMIN, TECHNICIAN, AUXILIAR, ELABORADOR, CAMPO
   position: varchar("position"), // Job title/position
   location: varchar("location"), // Work location
   department: varchar("department"), // Department/team
@@ -142,6 +142,19 @@ export const notifications = pgTable("notifications", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Order assignments for elaborators and field technicians
+export const orderAssignments = pgTable("order_assignments", {
+  id: serial("id").primaryKey(),
+  workOrderNumber: varchar("work_order_number", { length: 50 }).notNull(),
+  elaboradorId: varchar("elaborador_id").references(() => users.id),
+  tecnicoCampoId: varchar("tecnico_campo_id").references(() => users.id),
+  dataAtribuicao: timestamp("data_atribuicao").defaultNow(),
+  observacoes: text("observacoes"),
+  status: varchar("status", { length: 20 }).default("ATRIBUIDA"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Dashboard filters saved by users
 export const dashboardFilters = pgTable("dashboard_filters", {
   id: serial("id").primaryKey(),
@@ -231,6 +244,17 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
   }),
 }));
 
+export const orderAssignmentsRelations = relations(orderAssignments, ({ one }) => ({
+  elaborador: one(users, {
+    fields: [orderAssignments.elaboradorId],
+    references: [users.id],
+  }),
+  tecnicoCampo: one(users, {
+    fields: [orderAssignments.tecnicoCampoId],
+    references: [users.id],
+  }),
+}));
+
 export const notificationsRelations = relations(notifications, ({ one }) => ({
   user: one(users, {
     fields: [notifications.userId],
@@ -272,7 +296,14 @@ export const insertTeamMemberSchema = createInsertSchema(users).omit({
   department: z.string().optional(),
   bio: z.string().optional(),
   profileImageUrl: z.string().url("URL da imagem inválida").optional(),
-  userLevel: z.enum(["DEV", "CONTRACT_MANAGER", "REPORT_ELABORATOR", "SUPERVISOR", "ADMIN", "TECHNICIAN"]).default("TECHNICIAN")
+  userLevel: z.enum(["DEV", "CONTRACT_MANAGER", "REPORT_ELABORATOR", "SUPERVISOR", "ADMIN", "TECHNICIAN", "AUXILIAR", "ELABORADOR", "CAMPO"]).default("TECHNICIAN")
+});
+
+export const insertOrderAssignmentSchema = createInsertSchema(orderAssignments).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true,
+  dataAtribuicao: true 
 });
 
 // Login Data Schema
@@ -360,6 +391,8 @@ export type InsertWorkOrder = z.infer<typeof insertWorkOrderSchema>;
 export type WorkOrder = typeof workOrders.$inferSelect;
 export type InsertWorkOrderChecklist = z.infer<typeof insertWorkOrderChecklistSchema>;
 export type WorkOrderChecklist = typeof workOrderChecklist.$inferSelect;
+export type InsertOrderAssignment = z.infer<typeof insertOrderAssignmentSchema>;
+export type OrderAssignment = typeof orderAssignments.$inferSelect;
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;

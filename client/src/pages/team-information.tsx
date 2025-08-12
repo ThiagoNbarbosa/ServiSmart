@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { 
   MoreVertical, 
   Edit, 
@@ -13,7 +14,8 @@ import {
   Phone, 
   ArrowLeft,
   Users,
-  Plus
+  Plus,
+  Filter
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -26,6 +28,14 @@ import type { User, TeamTask } from "@shared/schema";
 import { TeamMemberForm } from "@/components/team/TeamMemberForm";
 import { DeleteMemberDialog } from "@/components/team/DeleteMemberDialog";
 import { MemberDetailsModal } from "@/components/team/MemberDetailsModal";
+
+// Member type configuration
+const tipoConfig = {
+  TECHNICIAN: { icon: '🔧', color: 'blue', label: 'Técnico', bg: 'bg-blue-50' },
+  AUXILIAR: { icon: '💻', color: 'green', label: 'Auxiliar', bg: 'bg-green-50' },
+  ELABORADOR: { icon: '📝', color: 'purple', label: 'Elaborador', bg: 'bg-purple-50' },
+  CAMPO: { icon: '🏗️', color: 'orange', label: 'Campo', bg: 'bg-orange-50' }
+};
 
 /**
  * Team Information Page Component
@@ -42,10 +52,26 @@ export default function TeamInformation() {
   const [memberToEdit, setMemberToEdit] = useState<User | null>(null);
   const [memberToDelete, setMemberToDelete] = useState<User | null>(null);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
+  const [filtroTipo, setFiltroTipo] = useState<string>('TODOS');
 
-  // Fetch team members (users with showInTeam = true)
+  // Fetch team members with filtering
   const { data: teamMembers = [], isLoading, error: membersError } = useQuery<User[]>({
-    queryKey: ['/api/team/members'],
+    queryKey: ['/api/team/members', { tipo: filtroTipo }],
+    queryFn: async () => {
+      const response = await fetch(`/api/team/members?tipo=${filtroTipo}`);
+      if (!response.ok) throw new Error('Failed to fetch team members');
+      return response.json();
+    }
+  });
+
+  // Fetch team statistics
+  const { data: stats = {}, isLoading: statsLoading } = useQuery({
+    queryKey: ['/api/team/members/stats'],
+    queryFn: async () => {
+      const response = await fetch('/api/team/members/stats');
+      if (!response.ok) throw new Error('Failed to fetch team stats');
+      return response.json();
+    }
   });
 
   // Fetch team tasks for progress display
@@ -186,10 +212,26 @@ export default function TeamInformation() {
             <p className="text-muted-foreground">
               Gerencie membros da equipe e visualize suas atividades
             </p>
+            
+            {/* Statistics Display */}
+            <div className="flex gap-3 mt-4">
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                🔧 {stats.tecnicos || 0} Técnicos
+              </Badge>
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                💻 {stats.auxiliares || 0} Auxiliares
+              </Badge>
+              <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                📝 {stats.elaboradores || 0} Elaboradores
+              </Badge>
+              <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                🏗️ {stats.campo || 0} Campo
+              </Badge>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {hasDevAccess && (
+            {user?.isDev && (
               <span className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded-full font-medium">
                 DEV MODE
               </span>
@@ -199,6 +241,21 @@ export default function TeamInformation() {
               Adicionar Membro
             </Button>
           </div>
+        </div>
+
+        {/* Filter Buttons */}
+        <div className="flex gap-2 flex-wrap">
+          {['TODOS', 'TECHNICIAN', 'AUXILIAR', 'ELABORADOR', 'CAMPO'].map(tipo => (
+            <Button
+              key={tipo}
+              variant={filtroTipo === tipo ? 'default' : 'outline'}
+              onClick={() => setFiltroTipo(tipo)}
+              size="sm"
+              className={filtroTipo === tipo ? 'bg-blue-600' : ''}
+            >
+              {tipo === 'TODOS' ? 'Todos' : (tipoConfig[tipo as keyof typeof tipoConfig]?.label || tipo)}
+            </Button>
+          ))}
         </div>
 
         {/* Team Cards Grid */}

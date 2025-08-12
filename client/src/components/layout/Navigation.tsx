@@ -5,12 +5,14 @@ import {
   Users, 
   FileText, 
   Settings,
-  Wrench
+  Wrench,
+  ClipboardList
 } from "lucide-react";
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Manutenção', href: '/maintenance', icon: Wrench },
+  { name: 'Ordens de Serviço', href: '/work-orders', icon: ClipboardList },
   { name: 'Equipe', href: '/team', icon: Users },
   { name: 'Relatórios', href: '/reports', icon: FileText },
   { name: 'Gestão', href: '/management', icon: Settings },

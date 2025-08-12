@@ -18,6 +18,7 @@ import HelpSupport from "@/pages/help-support";
 import Landing from "@/pages/landing";
 import NotFound from "@/pages/not-found";
 import MaintenanceOrders from "@/pages/preventive-orders";
+import WorkOrders from "@/pages/work-orders";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -37,6 +38,7 @@ function Router() {
             <Route path="/team" component={TeamInformation} />
             <Route path="/users" component={UserManagement} />
             <Route path="/maintenance" component={MaintenanceOrders} />
+            <Route path="/work-orders" component={WorkOrders} />
             <Route path="/profile" component={UserProfile} />
             <Route path="/management" component={Management} />
             <Route path="/system-config" component={SystemConfig} />
