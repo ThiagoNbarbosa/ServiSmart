@@ -1,14 +1,16 @@
 # 📸 RESUMO VISUAL SISTEMA MAFFENG - TODAS AS TELAS
+*Atualizado em: 12/08/2025*
 
 ## 🎯 ÍNDICE DAS PÁGINAS
 1. [Dashboard Principal](#dashboard) - Métricas e gráficos
 2. [Ordens de Serviço](#os) - Importação Excel + listagem
 3. [Manutenção Preventiva](#preventiva) - Planos de manutenção  
-4. [Informações da Equipe](#equipe) - Grid de técnicos/auxiliares
-5. [Gerenciamento de Usuários](#usuarios) - CRUD de usuários
-6. [Relatórios](#relatorios) - Analytics e exportação
-7. [Configurações do Sistema](#config) - Configurações gerais
-8. [Autenticação](#auth) - Landing, Login, Register
+4. [Ordens Preventivas](#preventivas) - **🆕 NOVO** RAT com importação inteligente
+5. [Informações da Equipe](#equipe) - Grid de técnicos/auxiliares
+6. [Gerenciamento de Usuários](#usuarios) - CRUD de usuários
+7. [Relatórios](#relatorios) - Analytics e exportação
+8. [Configurações do Sistema](#config) - Configurações gerais
+9. [Autenticação](#auth) - Landing, Login, Register
 
 ---
 
@@ -18,7 +20,7 @@
 ### 🖼️ VISUAL:
 ```
 HEADER: [LOGO MAFFENG] Dashboard                    🔔 [User ▼]
-SIDEBAR: 📊Dashboard 📋OS 🔧Preventiva 👥Equipe 👤Users 📊Reports
+SIDEBAR: 📊Dashboard 📋OS 🔧Preventiva 📋Preventivas🆕 👥Equipe 👤Users 📊Reports
 
 MAIN AREA:
 ┌─KPIs────────────────────────────────────────────────────┐
@@ -88,6 +90,40 @@ COM DADOS (futuro):
 
 **ESTADO**: Aguardando implementação de criação de planos
 **DESIGN**: Grid responsivo, badges por frequência
+
+---
+
+## 📋 ORDENS PREVENTIVAS {#preventivas} **🆕 NOVO**
+**Rota**: `/preventive-orders` | **Componente**: `preventive-orders.tsx`
+
+### 🖼️ VISUAL:
+```
+HEADER: Ordens Preventivas                [📤 IMPORTAR PREVENTIVAS]
+
+MAIN CONTENT:
+┌─RAT MANAGEMENT──────────────────────────────────────────────┐
+│ 🔧 Ordens de Manutenção Preventiva | Total: 0 ordens      │
+├─TABELA PREVENTIVAS─────────────────────────────────────────┤
+│ OS | AGÊNCIA | EQUIPAMENTO | VALOR | SITUAÇÃO | STATUS     │
+│ ──────────────────────────────────────────────────────────  │
+│           📄 Nenhuma ordem preventiva encontrada           │
+│         [📤 IMPORTAR PRIMEIRA PLANILHA]                    │
+└─────────────────────────────────────────────────────────────┘
+
+MODAL IMPORTAÇÃO INTELIGENTE:
+┌─ANALISAR & IMPORTAR─────────────────────────────────────────┐
+│ 📊 Importar Ordens Preventivas                         ✕  │
+│ 📁 [ESCOLHER ARQUIVO] PREVENTIVAS_xxx.xlsx                │
+│ [🔍 ANALISAR ESTRUTURA] [📤 IMPORTAR DIRETAMENTE]          │
+├─RESULTADO DA ANÁLISE───────────────────────────────────────┤
+│ ✅ 13 colunas encontradas | Preview: OS, Agência, Valor... │
+│ 💡 Sistema detecta qualquer formato de planilha           │
+│                                 [✅ CONFIRMAR IMPORTAÇÃO]  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**ESTADO ATUAL**: Sistema flexível implementado para qualquer formato de planilha PREVENTIVAS
+**INOVAÇÃO**: FlexibleExcelReader com detecção automática de colunas
 
 ---
 

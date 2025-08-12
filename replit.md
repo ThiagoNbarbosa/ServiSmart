@@ -12,6 +12,13 @@ The MAFFENG Work Order Management Dashboard is an intelligent system designed fo
 ## System Architecture
 The project is built with a clear separation of concerns, featuring a React/TypeScript frontend and an Express.js/TypeScript backend. UI/UX decisions prioritize a modern, clean, responsive, and professional aesthetic, utilizing Shadcn/ui and Tailwind CSS for components and styling. The design incorporates a harmonized color palette, modern CSS components with gradients and subtle shadows, and responsive layouts that adapt to various screen sizes. Key visual elements include redesigned KPI cards with rounded corners and modern typography, enhanced technician performance displays, and a redesigned recent activity timeline. Technical implementations leverage TanStack Query for state management and Drizzle ORM for database interactions. Core features include comprehensive CMMS functionalities such as asset management, preventive maintenance scheduling, and inventory control, all integrated with a unified navigation system and real-time WebSocket support.
 
+**Latest Updates (12/08/2025):**
+- Implemented FlexibleExcelReader system for intelligent Excel column detection
+- Added separate Preventive Orders (RAT) section with advanced import capabilities
+- Created automatic column mapping system that works with non-standard spreadsheets
+- Built preview functionality to show detected columns before import
+- Added status and date normalization for imported data
+
 ## External Dependencies
 - **Frontend**: React, TypeScript, Vite, Shadcn/ui, Tailwind CSS, TanStack Query
 - **Backend**: Express.js, TypeScript, Drizzle ORM, Zod (for input validation)
