@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, FileText, Download, Calendar, MapPin, Wrench, AlertCircle } from "lucide-react";
+import { Upload, FileText, Download, Calendar, MapPin, Wrench, AlertCircle, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -57,7 +57,7 @@ const statusLabels = {
   SERVICO_CONCLUIDO_PENDENTE_RELATORIO: 'Pendente Relatório'
 };
 
-export default function PreventiveOrders() {
+export default function MaintenanceOrders() {
   const [file, setFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
@@ -68,7 +68,7 @@ export default function PreventiveOrders() {
   const queryClient = useQueryClient();
 
   // Fetch preventive maintenance orders
-  const { data: orders = [], isLoading } = useQuery({
+  const { data: orders = [], isLoading } = useQuery<PreventiveMaintenanceOrder[]>({
     queryKey: ['/api/preventive-maintenance-orders'],
   });
 
@@ -77,23 +77,25 @@ export default function PreventiveOrders() {
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append('file', file);
-      return apiRequest(`/api/preventive-maintenance-orders/analyze`, {
+      const response = await fetch(`/api/preventive-maintenance-orders/analyze`, {
         method: 'POST',
         body: formData,
       });
+      if (!response.ok) throw new Error('Analysis failed');
+      return await response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       setAnalysis(data);
       setShowMapping(true);
       toast({
         title: "Análise Concluída",
-        description: `Encontrados ${data.headers.length} colunas e ${data.totalRows} linhas de dados.`,
+        description: `Encontrados ${data.headers?.length || 0} colunas e ${data.totalRows || 0} linhas de dados.`,
       });
     },
     onError: (error: any) => {
       toast({
         title: "Erro na Análise",
-        description: error.details || "Erro ao analisar arquivo Excel",
+        description: error.message || "Erro ao analisar arquivo Excel",
         variant: "destructive",
       });
     },
@@ -108,15 +110,17 @@ export default function PreventiveOrders() {
         formData.append('columnMapping', JSON.stringify(mapping));
         formData.append('headerRow', '1');
       }
-      return apiRequest(`/api/preventive-maintenance-orders/import`, {
+      const response = await fetch(`/api/preventive-maintenance-orders/import`, {
         method: 'POST',
         body: formData,
       });
+      if (!response.ok) throw new Error('Import failed');
+      return await response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast({
         title: "Importação Concluída",
-        description: `${data.imported} ordens de manutenção preventiva foram importadas com sucesso.`,
+        description: `${data.imported || 0} ordens de manutenção preventiva foram importadas com sucesso.`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/preventive-maintenance-orders'] });
       setImportDialogOpen(false);
@@ -127,7 +131,7 @@ export default function PreventiveOrders() {
     onError: (error: any) => {
       toast({
         title: "Erro na Importação",
-        description: error.details || "Erro ao importar arquivo Excel",
+        description: error.message || "Erro ao importar arquivo Excel",
         variant: "destructive",
       });
     },
@@ -197,9 +201,9 @@ export default function PreventiveOrders() {
     <div className="container mx-auto py-6 space-y-8">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Ordens Preventivas</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Manutenção</h1>
           <p className="text-muted-foreground">
-            Gerenciar ordens de manutenção preventiva e importações RAT
+            Central de controle de todas as ordens de manutenção preventiva
           </p>
         </div>
         

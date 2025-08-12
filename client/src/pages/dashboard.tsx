@@ -24,11 +24,11 @@ import TrendChart from "@/components/dashboard/TrendChart";
 import type { ActivityItem } from "@shared/schema";
 
 interface DashboardMetrics {
-  totalOS: number;
-  pendingOS: number;
+  totalPreventives: number;
+  scheduledPreventives: number;
+  executedPreventives: number;
+  urgentPreventives: number;
   completionRate: number;
-  averageTime: number;
-  overdueOS: number;
 }
 
 interface StatusDistribution {
@@ -84,7 +84,7 @@ export default function Dashboard() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
             <p className="text-muted-foreground">
-              Visão geral do sistema de ordens de serviço
+              Central de controle e métricas das ordens de manutenção preventiva
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -98,7 +98,7 @@ export default function Dashboard() {
             </Button>
             <Button size="sm">
               <Plus className="h-4 w-4 mr-2" />
-              Nova OS
+              Nova Preventiva
             </Button>
           </div>
         </div>
