@@ -144,6 +144,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // TV Mode specific endpoints
+  app.get('/api/maintenance/critical', devAuthMiddleware, async (req: any, res) => {
+    try {
+      // Busca OS críticas (vencidas, urgentes, alta prioridade)
+      const criticalOS = await storage.getCriticalMaintenanceOrders();
+      res.json(criticalOS || []);
+    } catch (error) {
+      console.error("Error fetching critical maintenance orders:", error);
+      res.status(500).json({ message: "Failed to fetch critical maintenance orders" });
+    }
+  });
+
+  app.get('/api/maintenance/schedule', devAuthMiddleware, async (req: any, res) => {
+    try {
+      // Busca agenda de manutenção (hoje, amanhã, próximos dias)
+      const { days = 7 } = req.query;
+      const schedule = await storage.getMaintenanceSchedule(parseInt(days as string));
+      res.json(schedule || []);
+    } catch (error) {
+      console.error("Error fetching maintenance schedule:", error);
+      res.status(500).json({ message: "Failed to fetch maintenance schedule" });
+    }
+  });
+
   // Work Orders routes
   app.get('/api/work-orders', devAuthMiddleware, async (req: any, res) => {
     try {
@@ -1506,6 +1530,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (client !== ws && client.readyState === WebSocket.OPEN) {
                 client.send(JSON.stringify({
                   type: 'DASHBOARD_UPDATE',
+                  timestamp: new Date().toISOString()
+                }));
+              }
+            });
+            break;
+          
+          case 'TV_MODE_ACTIVATED':
+            console.log('TV Mode activated with config:', data.config);
+            // Notifica outros clientes sobre ativação do modo TV
+            wss.clients.forEach(client => {
+              if (client !== ws && client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify({
+                  type: 'TV_MODE_STATUS',
+                  active: true,
+                  timestamp: new Date().toISOString()
+                }));
+              }
+            });
+            break;
+            
+          case 'TV_MODE_DEACTIVATED':
+            console.log('TV Mode deactivated');
+            // Notifica outros clientes sobre desativação do modo TV
+            wss.clients.forEach(client => {
+              if (client !== ws && client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify({
+                  type: 'TV_MODE_STATUS',
+                  active: false,
                   timestamp: new Date().toISOString()
                 }));
               }

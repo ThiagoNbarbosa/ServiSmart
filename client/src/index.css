@@ -294,6 +294,128 @@
   .tv-mode .chart-container {
     height: 400px;
   }
+
+  /* TV Mode Container Styles */
+  .tv-mode-container {
+    @apply min-h-screen overflow-hidden;
+  }
+
+  .tv-header {
+    @apply backdrop-blur-sm bg-black/80;
+  }
+
+  .tv-content {
+    @apply min-h-screen;
+  }
+
+  .tv-footer {
+    @apply backdrop-blur-sm bg-black/60;
+  }
+
+  /* Night Mode Enhancements */
+  .tv-night-mode {
+    filter: invert(1) hue-rotate(180deg);
+  }
+
+  .tv-night-mode img,
+  .tv-night-mode video,
+  .tv-night-mode svg {
+    filter: invert(1) hue-rotate(180deg);
+  }
+
+  /* TV Card Styles */
+  .tv-kpi-card {
+    @apply shadow-2xl hover:shadow-xl transition-all duration-500 hover:scale-105;
+    min-height: 200px;
+  }
+
+  .tv-chart-card {
+    @apply shadow-2xl hover:shadow-xl transition-all duration-500;
+    min-height: 500px;
+  }
+
+  .tv-highlight-card {
+    @apply shadow-2xl border-4 border-yellow-400;
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+
+  .tv-technician-card {
+    @apply shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105;
+    min-height: 250px;
+  }
+
+  .tv-schedule-card {
+    @apply shadow-xl;
+    min-height: 600px;
+  }
+
+  .tv-critical-card {
+    @apply shadow-2xl hover:shadow-xl transition-all duration-300;
+    min-height: 300px;
+  }
+
+  .tv-emergency-card {
+    @apply shadow-2xl border-4 border-red-400;
+    animation: pulse-red 1s ease-in-out infinite;
+  }
+
+  .tv-stats-card {
+    @apply shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105;
+  }
+
+  .tv-summary-card {
+    @apply shadow-2xl;
+  }
+
+  .tv-urgent-card {
+    @apply shadow-2xl;
+    animation: pulse-orange 2s ease-in-out infinite;
+  }
+
+  /* TV Animations */
+  @keyframes glow {
+    0% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }
+    100% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.8); }
+  }
+
+  @keyframes pulse-red {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+    50% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+  }
+
+  @keyframes pulse-orange {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7); }
+    50% { box-shadow: 0 0 0 15px rgba(249, 115, 22, 0); }
+  }
+
+  /* TV Responsive Adjustments */
+  @media (min-width: 1920px) {
+    .tv-mode-container {
+      font-size: 120%;
+    }
+    
+    .tv-kpi-card {
+      min-height: 250px;
+    }
+    
+    .tv-chart-card {
+      min-height: 600px;
+    }
+  }
+
+  @media (min-width: 2560px) {
+    .tv-mode-container {
+      font-size: 150%;
+    }
+    
+    .tv-kpi-card {
+      min-height: 300px;
+    }
+    
+    .tv-chart-card {
+      min-height: 700px;
+    }
+  }
   
   /* Floating Elements */
   .floating-notification {
