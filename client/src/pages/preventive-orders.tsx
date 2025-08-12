@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, FileText, Download, Calendar, MapPin, Wrench, AlertCircle, Search } from "lucide-react";
+import { Upload, FileText, Download, Calendar, MapPin, Wrench, AlertCircle, Search, CheckCircle, Lightbulb } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -214,7 +214,7 @@ export default function MaintenanceOrders() {
               Importar Preventivas
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[525px]">
+          <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
@@ -273,46 +273,96 @@ export default function MaintenanceOrders() {
               )}
 
               {showMapping && analysis && (
-                <div className="space-y-3">
-                  <div className="text-sm">
-                    <div className="font-medium text-green-600 mb-2">
-                      ✓ Análise Concluída: {analysis.headers.length} colunas encontradas
+                <div className="space-y-4">
+                  {/* Status Success Header */}
+                  <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                    <div className="flex-shrink-0 w-8 h-8 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center">
+                      <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
                     </div>
-                    
-                    <div className="bg-muted p-3 rounded-md space-y-2">
-                      <div className="font-medium">Colunas Identificadas:</div>
-                      <div className="grid grid-cols-2 gap-1 text-xs">
-                        {analysis.headers.map((header: string, index: number) => (
-                          <div key={index} className="truncate">
-                            {index + 1}: {header}
-                          </div>
-                        ))}
+                    <div>
+                      <div className="font-semibold text-green-800 dark:text-green-200">
+                        Análise Concluída com Sucesso
+                      </div>
+                      <div className="text-sm text-green-600 dark:text-green-400">
+                        {analysis.headers.length} colunas detectadas • {analysis.sampleRows?.length || 0} linhas de amostra
                       </div>
                     </div>
-
-                    {analysis.sampleRows.length > 0 && (
-                      <div className="bg-muted p-3 rounded-md mt-2">
-                        <div className="font-medium mb-2">Amostra de Dados:</div>
-                        <div className="text-xs space-y-1">
-                          {analysis.sampleRows.slice(0, 2).map((row: any[], rowIndex: number) => (
-                            <div key={rowIndex} className="truncate">
-                              Linha {rowIndex + 1}: {row.slice(0, 4).join(' | ')}...
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
+
+                  {/* Columns Section */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-blue-600" />
+                      <h4 className="font-medium text-sm">Colunas Identificadas</h4>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {analysis.headers.map((header: string, index: number) => (
+                        <div key={index} className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-800 rounded-md">
+                          <Badge variant="outline" className="text-xs">{index + 1}</Badge>
+                          <span className="text-xs font-medium truncate">{header}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Sample Data Section */}
+                  {analysis.sampleRows && analysis.sampleRows.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-purple-600" />
+                        <h4 className="font-medium text-sm">Amostra dos Dados</h4>
+                      </div>
+                      <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b border-slate-200 dark:border-slate-700">
+                              {analysis.headers.slice(0, 4).map((header: string, index: number) => (
+                                <th key={index} className="text-left p-1 font-medium text-slate-600 dark:text-slate-300 truncate">
+                                  {header}
+                                </th>
+                              ))}
+                              {analysis.headers.length > 4 && (
+                                <th className="text-left p-1 font-medium text-slate-400">...</th>
+                              )}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {analysis.sampleRows.slice(0, 3).map((row: any[], rowIndex: number) => (
+                              <tr key={rowIndex} className="border-b border-slate-100 dark:border-slate-700 last:border-0">
+                                {row.slice(0, 4).map((cell: any, cellIndex: number) => (
+                                  <td key={cellIndex} className="p-1 text-slate-700 dark:text-slate-200 truncate max-w-[100px]">
+                                    {cell || '-'}
+                                  </td>
+                                ))}
+                                {row.length > 4 && (
+                                  <td className="p-1 text-slate-400">+{row.length - 4}</td>
+                                )}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
               
-              <div className="text-sm text-muted-foreground space-y-2">
-                <p className="font-medium">💡 Dica: Sistema Inteligente de Importação</p>
-                <div className="text-xs bg-blue-50 p-2 rounded">
-                  <div>• O sistema detecta automaticamente as colunas da sua planilha</div>
-                  <div>• Funciona mesmo com planilhas fora do padrão</div>
-                  <div>• Use "Analisar Estrutura" para verificar se as colunas foram detectadas corretamente</div>
-                  <div>• Campos obrigatórios: OS e Agência</div>
+              {/* Tips Section */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <div className="flex-shrink-0 w-8 h-8 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center">
+                    <Lightbulb className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-blue-800 dark:text-blue-200 text-sm">
+                      Sistema Inteligente de Importação
+                    </div>
+                    <div className="text-xs text-blue-600 dark:text-blue-400 space-y-1 mt-1">
+                      <div>• Detecção automática de colunas</div>
+                      <div>• Compatível com planilhas fora do padrão</div>
+                      <div>• Campos obrigatórios: OS e Agência</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
