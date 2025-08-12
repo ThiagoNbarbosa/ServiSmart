@@ -1,8 +1,9 @@
 # 📋 DOCUMENTAÇÃO COMPLETA DO SISTEMA MAFFENG
 **Sistema de Gerenciamento de Manutenção (CMMS)**
+*Última atualização: 12/08/2025*
 
 ## 🎯 VISÃO GERAL DO SISTEMA
-O MAFFENG é um sistema CMMS (Computerized Maintenance Management System) desenvolvido para equipes de engenharia, focado na gestão eficiente de ordens de serviço, manutenção preventiva e controle de equipes técnicas.
+O MAFFENG é um sistema CMMS (Computerized Maintenance Management System) desenvolvido para equipes de engenharia, focado na gestão eficiente de ordens de serviço, manutenção preventiva e controle de equipes técnicas. O sistema inclui **importação inteligente de Excel com detecção automática de colunas**, suportando planilhas fora do padrão e duas seções distintas de preventivas.
 
 ### 🏗️ ARQUITETURA TÉCNICA
 - **Frontend**: React 18 + TypeScript + Vite
@@ -12,8 +13,18 @@ O MAFFENG é um sistema CMMS (Computerized Maintenance Management System) desenv
 - **State Management**: TanStack Query (React Query)
 - **Autenticação**: Sistema mock (desenvolvimento)
 - **Comunicação**: WebSockets para tempo real
+- **Excel Processing**: ExcelJS com FlexibleExcelReader para detecção automática de colunas
+- **Importação Inteligente**: Análise de estrutura e mapeamento automático de campos
 
 ---
+
+## 🆕 NOVIDADES NA VERSÃO ATUAL (12/08/2025)
+- ✅ **Sistema FlexibleExcelReader**: Detecção automática de colunas em planilhas Excel
+- ✅ **Ordens Preventivas**: Nova seção dedicada para RAT com importação específica
+- ✅ **Análise de Planilha**: Preview inteligente antes da importação
+- ✅ **Mapeamento Automático**: Sistema identifica campos automaticamente
+- ✅ **Suporte a Planilhas Desconfiguradas**: Funciona mesmo fora do padrão
+- ✅ **Normalização de Dados**: Status e datas normalizados automaticamente
 
 ## 📱 PÁGINAS DO SISTEMA
 
@@ -137,6 +148,57 @@ Coluna G: Status (PENDENTE/AGENDADA/EM_ANDAMENTO/CONCLUIDA)
 
 #### 🔌 INTEGRAÇÕES API:
 - `GET /api/maintenance-plans`
+
+---
+
+### 3.1. 📋 ORDENS PREVENTIVAS (`/preventive-orders`) **🆕 NOVO**
+**Arquivo**: `client/src/pages/preventive-orders.tsx`
+
+#### 📊 APARÊNCIA VISUAL:
+- **Layout**: Tabela administrativa com importação Excel avançada
+- **Header**: Botão de importação inteligente com modal
+- **Tabela**: Visualização das ordens RAT importadas
+- **Modal**: Interface de análise e importação com preview
+
+#### 🔧 FUNCIONALIDADES TÉCNICAS:
+1. **Importação Inteligente**:
+   - **FlexibleExcelReader**: Detecção automática de colunas
+   - **Análise de Estrutura**: Preview das colunas detectadas
+   - **Mapeamento Automático**: Identifica campos automaticamente
+   - **Preview de Dados**: Amostra antes da importação
+
+2. **Fluxo de Importação**:
+   ```
+   1. Selecionar arquivo Excel → 2. Analisar estrutura → 
+   3. Preview colunas detectadas → 4. Confirmar importação
+   ```
+
+3. **Suporte a Planilhas Não-Padrão**:
+   - Detecta qualquer formato de planilha PREVENTIVAS
+   - Normaliza status e datas automaticamente
+   - Valida campos obrigatórios (OS e Agência)
+
+#### 📝 MAPEAMENTO DE CAMPOS DETECTADOS:
+```
+ELABORADOR DE RELATÓRIO → reportCreatorId
+DATA LEVANTAMENTO → surveyDate  
+CONTRATO → contractNumber
+OS → workOrderNumber (obrigatório)
+PREFIXO → equipmentPrefix
+AGÊNCIA → agencyName (obrigatório)
+VALOR PREVENTIVA ORÇAMENTO → preventiveBudgetValue
+VENCIMENTO PORTAL → portalDeadline
+SITUAÇÃO → situationStatus (normalizado)
+TÉCNICO PREVENTIVA → preventiveTechnicianId
+DATA AGENDAMENTO → scheduledDate
+DIFICULDADES → difficultiesNotes
+STATUS → executionStatus (normalizado)
+```
+
+#### 🔌 INTEGRAÇÕES API:
+- `POST /api/preventive-maintenance-orders/analyze` - Análise de planilha
+- `POST /api/preventive-maintenance-orders/import` - Importação flexível  
+- `GET /api/preventive-maintenance-orders` - Listagem das ordens
 
 ---
 

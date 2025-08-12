@@ -1,4 +1,5 @@
 # 📸 CAPTURAS DE TELA DETALHADAS - SISTEMA MAFFENG
+*Atualizado em: 12/08/2025*
 
 ## 🎯 LAYOUT GERAL DO SISTEMA
 
@@ -7,12 +8,13 @@
 ┌─────────────────────────────────────────────────────┐
 │ [LOGO MAFFENG] DASHBOARD                  🔔 [USER] │ ← Header azul
 ├─────────────────────────────────────────────────────┤
-│ 📊 Dashboard         │                               │
-│ 📋 Ordens de Serviço │        CONTEÚDO              │ ← Sidebar +
-│ 🔧 Manutenção        │         PRINCIPAL             │   Área principal
-│ 👥 Equipe            │                               │
-│ 👤 Usuários          │                               │
-│ 📊 Relatórios        │                               │
+│ 📊 Dashboard             │                           │
+│ 📋 Ordens de Serviço     │        CONTEÚDO          │ ← Sidebar +
+│ 🔧 Manutenção Preventiva │         PRINCIPAL         │   Área principal
+│ 📋 Ordens Preventivas 🆕 │                           │   (nova seção)
+│ 👥 Equipe                │                           │
+│ 👤 Usuários              │                           │
+│ 📊 Relatórios            │                           │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -113,6 +115,84 @@ MODAL DE IMPORTAÇÃO:
 ---
 
 ## 📱 PÁGINA 3: MANUTENÇÃO PREVENTIVA (`/preventive-maintenance`)
+
+### 🖼️ LAYOUT VISUAL:
+```
+┌─────────────────────────────────────────────────────────────┐
+│                🔧 MANUTENÇÃO PREVENTIVA                     │
+├─────────────────────────────────────────────────────────────┤
+│                   📄 Nenhum plano encontrado               │
+│              Crie o primeiro plano de manutenção           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📱 PÁGINA 3.1: ORDENS PREVENTIVAS (`/preventive-orders`) **🆕 NOVA**
+
+### 🖼️ LAYOUT VISUAL:
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 📋 ORDENS PREVENTIVAS                  [📤 IMPORTAR PREVENTIVAS] │
+├─────────────────────────────────────────────────────────────┤
+│ 🔧 Ordens de Manutenção Preventiva                         │
+│ Lista de todas as ordens de manutenção preventiva importadas│
+│ Total: 0 ordens                                             │
+├─────────────────────────────────────────────────────────────┤
+│ ┌─TABELA PREVENTIVAS────────────────────────────────────────┐ │
+│ │ OS │ AGÊNCIA │ EQUIPAMENTO │ VALOR │ SITUAÇÃO │ STATUS   │ │
+│ │────┼─────────┼─────────────┼───────┼──────────┼─────────  │ │
+│ │                    📄 Nenhuma ordem preventiva           │ │
+│ │                         encontrada                       │ │
+│ │            Importe dados usando Excel                    │ │
+│ │          [📤 IMPORTAR PRIMEIRA PLANILHA]                 │ │
+│ └─────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+
+MODAL DE IMPORTAÇÃO INTELIGENTE:
+┌─────────────────────────────────────────────────────────────┐
+│ 📊 Importar Ordens Preventivas                          ✕ │
+│ Faça upload de uma planilha Excel (PREVENTIVAS)            │
+├─────────────────────────────────────────────────────────────┤
+│ 📁 Arquivo Excel: [ESCOLHER ARQUIVO] (.xlsx, .xls)         │
+│ 📄 Arquivo selecionado: PREVENTIVAS_1754960675187.xlsx     │
+├─────────────────────────────────────────────────────────────┤
+│ [🔍 ANALISAR ESTRUTURA] [📤 IMPORTAR DIRETAMENTE]           │
+├─────────────────────────────────────────────────────────────┤
+│ ✅ Análise Concluída: 13 colunas encontradas               │
+│ ┌─COLUNAS IDENTIFICADAS────────────────────────────────────┐ │
+│ │ 1: ELABORADOR DE RELATÓRIO  │ 8: VENCIMENTO PORTAL     │ │
+│ │ 2: DATA LEVANTAMENTO        │ 9: SITUAÇÃO             │ │  
+│ │ 3: CONTRATO                 │ 10: TÉCNICO PREVENTIVA  │ │
+│ │ 4: OS                       │ 11: DATA AGENDAMENTO    │ │
+│ │ 5: PREFIXO                  │ 12: DIFICULDADES       │ │
+│ │ 6: AGÊNCIA                  │ 13: STATUS             │ │
+│ │ 7: VALOR PREVENTIVA ORÇAMENTO │                       │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│ ┌─AMOSTRA DE DADOS─────────────────────────────────────────┐ │
+│ │ Linha 1: AGM001 | 2024-08-12 | 123456 | Sede...         │ │
+│ │ Linha 2: AGM002 | 2024-08-13 | 123457 | Filial...       │ │
+│ └─────────────────────────────────────────────────────────┘ │
+├─────────────────────────────────────────────────────────────┤
+│ 💡 Sistema Inteligente de Importação                       │
+│ • O sistema detecta automaticamente as colunas da planilha │
+│ • Funciona mesmo com planilhas fora do padrão             │
+│ • Use "Analisar Estrutura" para verificar detecção        │
+│ • Campos obrigatórios: OS e Agência                       │
+├─────────────────────────────────────────────────────────────┤
+│                              [Cancelar] [✅ CONFIRMAR IMPORTAÇÃO] │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 🎨 ELEMENTOS VISUAIS:
+- **Header**: Título com ícone, botão de importação verde
+- **Tabela**: Colunas organizadas com status coloridos
+- **Modal Inteligente**: 
+  - Preview das colunas detectadas
+  - Amostra dos dados encontrados
+  - Botões de análise e importação
+  - Dicas de uso do sistema flexível
+- **Estados**: Empty state informativo, loading states durante análise
 
 ### 🖼️ LAYOUT VISUAL:
 ```
