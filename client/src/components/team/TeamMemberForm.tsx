@@ -83,7 +83,14 @@ export function TeamMemberForm({ isOpen, onClose, member, mode }: TeamMemberForm
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      if (!response.ok) throw new Error('Failed to create team member');
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        const error = new Error(errorData.message || 'Failed to create team member');
+        error.status = response.status;
+        throw error;
+      }
+      
       return response.json();
     },
     onSuccess: () => {
@@ -96,9 +103,17 @@ export function TeamMemberForm({ isOpen, onClose, member, mode }: TeamMemberForm
       form.reset();
     },
     onError: (error: any) => {
+      let errorMessage = "Erro ao criar membro da equipe";
+      
+      if (error.status === 409) {
+        errorMessage = "Este email já está sendo usado por outro usuário";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Erro",
-        description: error.message || "Erro ao criar membro da equipe",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -111,7 +126,14 @@ export function TeamMemberForm({ isOpen, onClose, member, mode }: TeamMemberForm
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      if (!response.ok) throw new Error('Failed to update team member');
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        const error = new Error(errorData.message || 'Failed to update team member');
+        error.status = response.status;
+        throw error;
+      }
+      
       return response.json();
     },
     onSuccess: () => {
@@ -123,9 +145,17 @@ export function TeamMemberForm({ isOpen, onClose, member, mode }: TeamMemberForm
       onClose();
     },
     onError: (error: any) => {
+      let errorMessage = "Erro ao atualizar membro da equipe";
+      
+      if (error.status === 409) {
+        errorMessage = "Este email já está sendo usado por outro usuário";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Erro",
-        description: error.message || "Erro ao atualizar membro da equipe",
+        description: errorMessage,
         variant: "destructive",
       });
     },
